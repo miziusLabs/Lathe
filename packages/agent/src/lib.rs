@@ -1,4 +1,4 @@
-//! Dray's standalone coding agent. No external agent or JavaScript runtime.
+//! Lathe's standalone coding agent. No external agent or JavaScript runtime.
 //! The JSON-line transport preserves the desktop's established event envelopes.
 use anyhow::{bail, Context, Result};
 use base64::{engine::general_purpose::STANDARD, Engine};
@@ -127,7 +127,7 @@ fn prepare_request(mut body: Value) -> Value {
                 .filter(|tool| tool["type"] != "function")
                 .cloned()
                 .collect::<Vec<_>>();
-            tools.push(json!({"type":"namespace","name":"dray","description":"Dray's locally executed coding tools","tools":functions}));
+            tools.push(json!({"type":"namespace","name":"dray","description":"Lathe's locally executed coding tools","tools":functions}));
             body["tools"] = json!(tools);
         }
     }
@@ -574,13 +574,13 @@ where
         cwd.display(),
         std::env::consts::OS
     ));
-    instructions.push_str("\nYou are Dray's built-in coding agent. Bash runs PowerShell on Windows and sh on other platforms. Follow workspace instructions and inspect AGENTS.md files in subdirectories before editing. Read file attachments mentioned with @path using the read tool. For images, use read on PNG, JPEG, GIF, or WebP files; their pixels are provided as visual input.\n");
+    instructions.push_str("\nYou are Lathe's built-in coding agent. Bash runs PowerShell on Windows and sh on other platforms. Follow workspace instructions and inspect AGENTS.md files in subdirectories before editing. Read file attachments mentioned with @path using the read tool. For images, use read on PNG, JPEG, GIF, or WebP files; their pixels are provided as visual input.\n");
     for skill in skills::discover(&cwd) {
         let location = skill
             .path
             .as_ref()
             .map(|path| path.display().to_string())
-            .unwrap_or_else(|| "bundled with Dray".into());
+            .unwrap_or_else(|| "bundled with Lathe".into());
         instructions.push_str(&format!(
             "\nAvailable skill: ${} — {} ({})",
             skill.name, skill.description, location
@@ -767,7 +767,7 @@ where
             return Ok(());
         }
     }
-    bail!("Dray reached its 200-request turn limit. Send a follow-up to continue.")
+    bail!("Lathe reached its 200-request turn limit. Send a follow-up to continue.")
 }
 
 pub async fn run() -> Result<()> {
@@ -854,7 +854,7 @@ pub async fn run() -> Result<()> {
                         emit(json!({"type":"agent_settled"}));
                     }
                     "get_session_stats" => { let c=config.lock().unwrap(); emit(json!({"type":"response","id":message["id"],"command":"get_session_stats","success":true,"data":{"contextUsage":{"tokens":c.context_tokens,"contextWindow":c.context_window}}})); },
-                    _ => emit(json!({"type":"response","id":message["id"],"command":message["type"],"success":false,"error":"Unsupported Dray agent command"})),
+                    _ => emit(json!({"type":"response","id":message["id"],"command":message["type"],"success":false,"error":"Unsupported Lathe agent command"})),
                 }
             }
         }

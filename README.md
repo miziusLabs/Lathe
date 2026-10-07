@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  Dray
+  Lathe
   <br>
 </h1>
 
@@ -16,7 +16,7 @@
 
 ## Overview
 
-Dray is a desktop app with its own Rust coding agent. Connect your ChatGPT account in Settings to use the OpenAI models available to your account. Pi and Node.js are not required to run the agent.
+Lathe is a desktop app with its own Rust coding agent. Connect your ChatGPT account in Settings to use the OpenAI models available to your account. Pi and Node.js are not required to run the agent.
 
 > This project is a fork of [monorepo-labs/dray](https://github.com/monorepo-labs/dray).
 
@@ -28,7 +28,7 @@ This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
 
 - Persistent multi-session workspace with search, pinning, settling, forks, nested sessions, unread/waiting state, and desktop notifications.
 - Local Sessions inside attached projects, with project and Git branch switching.
-- Isolated Cloud Sessions that run Dray's agent in Docker with their own persistent workspace volume.
+- Isolated Cloud Sessions that run Lathe's agent in Docker with their own persistent workspace volume.
 - ChatGPT sign-in, account-specific model and effort controls, context usage, queued follow-ups, and generated session titles.
 - Native file editing, search, shell and background commands, questions, codebase/GitHub research, and web search.
 - Automatic OpenAI prompt caching with recorded token and cache-hit indicators.
@@ -43,10 +43,10 @@ This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
 Open **Settings > Models > Continue with ChatGPT** and complete browser sign-in.
 Model and reasoning choices come from the account's OpenAI catalog. Credentials
 stay in the native backend and operating system credential store on Windows
-and macOS. Dray never imports Pi authentication.
+and macOS. Lathe never imports Pi authentication.
 
 Skills live in `~/.mizius/skills/<name>/SKILL.md` or a project's
-`.agents/skills/<name>/SKILL.md`. Dray's bundled skills are installed in the
+`.agents/skills/<name>/SKILL.md`. Lathe's bundled skills are installed in the
 global directory so they can be read like other skills; existing files are
 never overwritten. Use YAML frontmatter with `name` and `description`, followed
 by the skill instructions. Select a skill in the composer or invoke it with
@@ -54,7 +54,7 @@ by the skill instructions. Select a skill in the composer or invoke it with
 
 The embedded system prompt is `packages/agent/SYSTEM.md`. Usage shows ChatGPT
 Codex limits when available, using a matching local Codex login if needed.
-Follow the ChatGPT usage link to manage Dray’s app allowance.
+Follow the ChatGPT usage link to manage Lathe’s app allowance.
 
 ## Tech stack
 
@@ -101,9 +101,9 @@ cd apps/desktop/src-tauri && cargo test
 
 ## Cloud sandbox
 
-Cloud Sessions run the standalone Dray agent in Docker without mounting or
+Cloud Sessions run the standalone Lathe agent in Docker without mounting or
 cloning the selected project. The image includes Java 21, Java 25, Node.js 24,
-GitHub CLI, Git, and Dray. Host `~/.mizius/skills` is mounted read-only. Each
+GitHub CLI, Git, and Lathe. Host `~/.mizius/skills` is mounted read-only. Each
 workspace has its own persistent history. Short-lived OpenAI access tokens
 travel through stdin; credentials remain on the host. GitHub authentication
 uses `GITHUB_TOKEN` or an authenticated host `gh`.

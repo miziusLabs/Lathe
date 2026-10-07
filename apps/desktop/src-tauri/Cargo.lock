@@ -956,52 +956,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dray"
-version = "0.8.4"
-dependencies = [
- "anyhow",
- "base64 0.22.1",
- "dirs 6.0.0",
- "dray-agent",
- "fff-search",
- "jsonwebtoken",
- "keyring",
- "notify-rust",
- "reqwest",
- "rustls",
- "serde",
- "serde_json",
- "sha2",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-opener",
- "tauri-plugin-updater",
- "tokio",
- "ts-rs",
- "uuid",
- "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "dray-agent"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "base64 0.22.1",
- "dirs 6.0.0",
- "libc",
- "reqwest",
- "rustls",
- "serde",
- "serde_json",
- "serde_yaml",
- "tokio",
- "uuid",
- "windows-sys 0.61.2",
-]
-
-[[package]]
 name = "dtoa"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2361,6 +2315,52 @@ checksum = "07293a4e297ac234359b510362495713f75ea345d5307140414f20c69ffeb087"
 dependencies = [
  "bitflags 2.13.1",
  "libc",
+]
+
+[[package]]
+name = "lathe"
+version = "0.8.4"
+dependencies = [
+ "anyhow",
+ "base64 0.22.1",
+ "dirs 6.0.0",
+ "fff-search",
+ "jsonwebtoken",
+ "keyring",
+ "lathe-agent",
+ "notify-rust",
+ "reqwest",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-opener",
+ "tauri-plugin-updater",
+ "tokio",
+ "ts-rs",
+ "uuid",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "lathe-agent"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base64 0.22.1",
+ "dirs 6.0.0",
+ "libc",
+ "reqwest",
+ "rustls",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tokio",
+ "uuid",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

@@ -1,16 +1,16 @@
 {
-  "name": "ade",
+  "name": "lathe-workspace",
   "private": true,
   "license": "Apache-2.0",
   "version": "0.0.0",
   "type": "module",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
-    "app": "pnpm --filter dray run app",
-    "app:no-watch": "pnpm --filter dray run app:no-watch",
-    "tauri": "pnpm --filter dray run tauri",
-    "build:app": "pnpm --filter dray run build",
-    "build:sandbox": "pnpm --filter dray run build:sandbox",
-    "test": "pnpm --filter dray run test"
+    "app": "pnpm --filter lathe run app",
+    "app:no-watch": "pnpm --filter lathe run app:no-watch",
+    "tauri": "pnpm --filter lathe run tauri",
+    "build:app": "pnpm --filter lathe run build",
+    "build:sandbox": "pnpm --filter lathe run build:sandbox",
+    "test": "pnpm --filter lathe run test"
   }
 }

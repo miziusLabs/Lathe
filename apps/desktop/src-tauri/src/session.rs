@@ -77,7 +77,7 @@ fn resolve_local_cwd(cwd: &str, home: &std::path::Path) -> PathBuf {
     }
 }
 
-/// Ensures the local launch directory exists before spawning Dray.
+/// Ensures the local launch directory exists before spawning Lathe.
 async fn prepare_local_cwd(cwd: &str) -> Result<String> {
     let home = dirs::home_dir().context("could not resolve home directory")?;
     let path = resolve_local_cwd(cwd, &home);
@@ -493,7 +493,7 @@ impl SessionManager {
                 prompt,
                 // Cloud's launch cwd is the empty host-side marker used by
                 // the Docker-backed session. Title generation runs as a
-                // local one-shot Dray process, so use the selected project
+                // local one-shot Lathe process, so use the selected project
                 // context instead (or "." when Cloud has no project).
                 if cloud_name.is_some() {
                     cwd
@@ -608,7 +608,7 @@ impl SessionManager {
 
         // A fork that has not spawned yet. Cloud forks get a fresh private
         // volume; the app transcript is still copied immediately, while the
-        // next Dray process starts clean because the parent's Docker volume is
+        // next Lathe process starts clean because the parent's Docker volume is
         // deliberately never mounted into another session.
         let fork_from = indexed.as_ref().and_then(|i| i.fork_from.clone());
         let cloud_name = indexed.as_ref().and_then(|i| i.cloud_name.clone());
@@ -642,8 +642,8 @@ impl SessionManager {
             cloud_name.as_deref(),
             is_new_session,
             // A Cloud fork's application transcript is preserved, but its
-            // Dray context lives in the parent's private Docker volume. Starting
-            // a fresh Dray context is safer than mounting another session's
+            // Lathe context lives in the parent's private Docker volume. Starting
+            // a fresh Lathe context is safer than mounting another session's
             // volume or accidentally sharing mutable state.
             if cloud_name.is_none() {
                 fork_from.as_deref()
@@ -737,7 +737,7 @@ impl SessionManager {
     /// Stops everything the session is doing immediately.
     ///
     /// Remove the child from the live map and terminate its process tree. The
-    /// next prompt resumes the persisted Dray session in a new child.
+    /// next prompt resumes the persisted Lathe session in a new child.
     pub async fn interrupt(&self, session_id: &str, app: &AppHandle) -> Result<()> {
         // Keep the manager lock until the idle status is published. Otherwise a
         // prompt sent in the small window after removal could respawn the
@@ -820,10 +820,10 @@ impl SessionManager {
             session.kill().await?;
         }
 
-        // Local Dray sessions keep their context files beside Dray; Cloud Dray
+        // Local Lathe sessions keep their context files beside Lathe; Cloud Lathe
         // sessions keep them in the Docker volume, which is removed below.
         if let Err(e) = dray::delete_session_data(session_id).await {
-            eprintln!("could not delete Dray session data for {session_id}: {e}");
+            eprintln!("could not delete Lathe session data for {session_id}: {e}");
         }
 
         if let Some(item) = get_session_index_item(session_id).await? {
@@ -915,7 +915,7 @@ fn interrupted_turn(
     })
 }
 
-/// Owns a Windows job containing the Dray process and all of its descendants.
+/// Owns a Windows job containing the Lathe process and all of its descendants.
 /// Closing a job configured with `KILL_ON_JOB_CLOSE` terminates the whole tree
 /// without waiting for `taskkill` to enumerate and reap every process.
 #[cfg(windows)]
@@ -929,7 +929,7 @@ pub struct ProcessJob {
 
 #[cfg(windows)]
 impl ProcessJob {
-    /// Creates and configures a job after Dray is spawned. A failure falls back
+    /// Creates and configures a job after Lathe is spawned. A failure falls back
     /// to the taskkill path, since being unable to install the optimization
     /// must not prevent a session from starting.
     pub fn attach(child: &Child) -> Option<Self> {
@@ -955,7 +955,7 @@ impl ProcessJob {
 
         if !assigned {
             unsafe { CloseHandle(handle) };
-            eprintln!("[process job err] could not assign Dray to Windows job");
+            eprintln!("[process job err] could not assign Lathe to Windows job");
             return None;
         }
 
@@ -980,7 +980,7 @@ pub struct Session {
     /// behalf of the frontend.
     pub stdin: Arc<Mutex<ChildStdin>>,
     pub harness: Harness,
-    /// Whether the child is a Dray process inside a Docker Cloud sandbox.
+    /// Whether the child is a Lathe process inside a Docker Cloud sandbox.
     pub cloud: bool,
     /// The host-side directory used by the local UI. Cloud sessions keep their
     /// actual files in Docker and this directory remains empty.
@@ -999,7 +999,7 @@ pub struct Session {
     /// termination path and does not need an extra handle.
     #[cfg(windows)]
     pub process_job: Option<ProcessJob>,
-    /// Dray extension dialogs waiting for an answer from the frontend.
+    /// Lathe extension dialogs waiting for an answer from the frontend.
     pub agent_ui_requests: dray::mapper::PendingUiRequests,
     /// Prompts typed during a running turn, waiting for the next boundary.
     /// Shared with the stdout task, which is what flushes them.
@@ -1145,7 +1145,7 @@ impl Session {
             let agent_model = model
                 .agent_model
                 .as_ref()
-                .context("Dray model is missing its provider")?;
+                .context("Lathe model is missing its provider")?;
             write_line(
                 &self.stdin,
                 &serde_json::json!({
@@ -1184,9 +1184,9 @@ impl Session {
         let pending = self
             .agent_ui_requests
             .lock()
-            .expect("Dray UI request mutex poisoned")
+            .expect("Lathe UI request mutex poisoned")
             .remove(request_id)
-            .with_context(|| format!("no pending Dray UI request {request_id}"))?;
+            .with_context(|| format!("no pending Lathe UI request {request_id}"))?;
         write_line(&self.stdin, &pending.response(&answers)).await?;
 
         let answered = AgentEvent {
@@ -1233,7 +1233,7 @@ impl Session {
     }
 }
 
-/// Terminates a session's Dray process and, on Windows, every descendant tool.
+/// Terminates a session's Lathe process and, on Windows, every descendant tool.
 ///
 /// New sessions use [`ProcessJob`] above. `taskkill /T` remains as a fallback
 /// for a process that could not be assigned to a job (for example, when the
@@ -1343,7 +1343,7 @@ async fn deliver_prompt(
         harness,
         seq,
         ts: now_rfc3339(),
-        // Nothing tracks turns yet; Dray opens one per `init`.
+        // Nothing tracks turns yet; Lathe opens one per `init`.
         turn_id: None,
         payload,
         raw: None,
@@ -1358,7 +1358,7 @@ async fn deliver_prompt(
     append_session_event(session_id, agent_event).await?;
 
     debug_assert_eq!(harness, Dray);
-    // `$name` is Dray's user-facing skill syntax; Dray's RPC parser expects the
+    // `$name` is Lathe's user-facing skill syntax; Lathe's RPC parser expects the
     // equivalent `/skill:name` command. Keep the stored event in `$` form so
     // the transcript reflects what the user typed.
     let agent_prompt = normalize_skill_prompt(&prepared.text);

@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { diffSide, diffSides, editSides, fileName } from "./diff";
 
-describe("Dray file edit arguments", () => {
-  it("understands Dray's path and oldText/newText edit shape", () => {
+describe("Lathe file edit arguments", () => {
+  it("understands Lathe's path and oldText/newText edit shape", () => {
     expect(
       editSides({
         path: "src/main.ts",

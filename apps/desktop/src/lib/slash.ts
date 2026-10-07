@@ -8,7 +8,7 @@
 /// [streaming.ts]: ./streaming.ts
 import type { SlashCommand } from "@/types/events";
 
-/// Commands owned by Dray. Dray's command registry is intentionally not exposed
+/// Commands owned by Lathe. Lathe's command registry is intentionally not exposed
 /// in the composer; only its skills are useful prompt completions here.
 export const DRAY_COMMANDS: SlashCommand[] = [
   {
@@ -91,7 +91,7 @@ export function slashPrefix(text: string, caret: number): "/" | "$" | null {
 ///
 /// Ranked rather than filtered so a typed prefix beats a chance mention in some
 /// other command's description. The sort is stable and an empty query preserves
-/// the order supplied by Dray and the skills probe rather than re-alphabetizing.
+/// the order supplied by Lathe and the skills probe rather than re-alphabetizing.
 export function filterCommands(commands: SlashCommand[], query: string): SlashCommand[] {
   const q = query.toLowerCase();
 
@@ -148,7 +148,7 @@ export function applyCommand(
   };
 }
 
-/// The first argument of a leading Dray command, used for model and effort
+/// The first argument of a leading Lathe command, used for model and effort
 /// completion after `/model ` or `/effort `. The returned span excludes the
 /// command and whitespace so it can be replaced without disturbing the prompt.
 export function slashArgumentQuery(
@@ -173,7 +173,7 @@ export function slashArgumentQuery(
   return { commandName, query: text.slice(argumentStart, argumentEnd) };
 }
 
-/// Replaces the active first argument of a Dray command and leaves the caret
+/// Replaces the active first argument of a Lathe command and leaves the caret
 /// ready for the command's remaining arguments.
 export function applyCommandArgument(
   text: string,

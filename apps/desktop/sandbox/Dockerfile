@@ -1,4 +1,4 @@
-# Dray Cloud sandbox image.
+# Lathe Cloud sandbox image.
 # Build with: pnpm build:sandbox
 FROM rust:1.99-bookworm AS agent-build
 WORKDIR /build
@@ -37,7 +37,7 @@ ENV JAVA_HOME=/usr/lib/jvm/default
 ENV PATH=/usr/lib/jvm/default/bin:${PATH}
 ENV NODE_PATH=/usr/lib/node_modules
 
-COPY --from=agent-build /build/agent/target/release/dray-agent /usr/local/bin/dray-agent
+COPY --from=agent-build /build/agent/target/release/lathe-agent /usr/local/bin/lathe-agent
 
 # Ubuntu images ship a default `ubuntu` user at UID 1000, which would collide
 # with the agent user below; drop it first so fresh pulls of the base image

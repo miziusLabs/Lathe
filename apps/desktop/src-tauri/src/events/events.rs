@@ -38,7 +38,7 @@ pub struct AgentEvent {
     /// Position in the session's event log, and the cursor for reconnecting a UI
     /// to a running session. One counter per session, shared by mapped stdout
     /// lines and events the app synthesizes itself, seeded from the persisted log
-    /// on resume. Never sort by `ts` — most Dray events omit it.
+    /// on resume. Never sort by `ts` — most Lathe events omit it.
     pub seq: u64,
     pub ts: String,
     pub turn_id: Option<String>,
@@ -60,7 +60,7 @@ pub struct AgentEvent {
 )]
 pub enum AgentEventPayload {
     // ---------- session / turn lifecycle ----------
-    /// Dray emits one `init` per turn, not per session — the tool list
+    /// Lathe emits one `init` per turn, not per session — the tool list
     /// grows between them as deferred tools load — so this carries whatever the
     /// turn was configured with. The first of a session is the session's.
     ///
@@ -118,7 +118,7 @@ pub enum AgentEventPayload {
         /// it inside the running one and emits a single `result` for both.
         #[serde(default)]
         queued: bool,
-        /// The Dray session that relayed this prompt, when one did.
+        /// The Lathe session that relayed this prompt, when one did.
         ///
         /// `None` — the ordinary case — means the user typed it. Carried as a
         /// field rather than named in `text` because the transcript draws the
@@ -136,7 +136,7 @@ pub enum AgentEventPayload {
         text: String,
     },
     /// `encrypted` records that a reasoning step happened but its content is
-    /// unreadable, which is how Dray reports reasoning it won't disclose.
+    /// unreadable, which is how Lathe reports reasoning it won't disclose.
     Reasoning {
         #[serde(default)]
         block: Option<BlockRef>,
@@ -159,7 +159,7 @@ pub enum AgentEventPayload {
         /// Always an object. JSON-encoded argument strings are parsed here;
         /// unparseable input becomes `{"_unparsed": "…"}` rather than dropped.
         input: Value,
-        /// Input that isn't JSON at all — Dray's `custom_tool_call.input` is raw
+        /// Input that isn't JSON at all — Lathe's `custom_tool_call.input` is raw
         /// JS source.
         raw_input: Option<String>,
         title: Option<String>,
@@ -168,7 +168,7 @@ pub enum AgentEventPayload {
         call_id: String,
         result: ToolResult,
     },
-    /// Structured file changes. Dray reports these first-class; Dray
+    /// Structured file changes. Lathe reports these first-class; Lathe
     /// does not, so its edits currently surface as ordinary
     /// [`ToolType::FileEdit`] calls.
     FileEdits {
@@ -232,7 +232,7 @@ pub enum AgentEventPayload {
         exit_code: Option<i32>,
         outcome: Option<String>,
     },
-    /// A fire-and-forget notification emitted by a Dray extension through its
+    /// A fire-and-forget notification emitted by a Lathe extension through its
     /// host UI API. It is live-only because it has no meaning after the process
     /// that produced it is gone.
     ExtensionNotification {
@@ -330,8 +330,8 @@ pub struct QuestionOption {
     pub preview: Option<String>,
 }
 
-/// How a turn ended. Dray reports this as `is_error` on its result
-/// event; Dray live emits `turn.completed` (a failed turn is uncaptured so
+/// How a turn ended. Lathe reports this as `is_error` on its result
+/// event; Lathe live emits `turn.completed` (a failed turn is uncaptured so
 /// far). A user-abort outcome likely deserves its own variant once one has been
 /// captured.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -343,7 +343,7 @@ pub enum TurnStatus {
 }
 
 /// Joins streamed content to its committed counterpart. A message is often
-/// `[text, tool_use, …]` and each block arrives as its own event; Dray's
+/// `[text, tool_use, …]` and each block arrives as its own event; Lathe's
 /// committed events carry no index, so the mapper derives one by counting blocks
 /// per `message_id` in arrival order.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
@@ -358,7 +358,7 @@ pub struct BlockRef {
 ///
 /// **Deltas are a preview, never the source of truth**: the committed event for
 /// the same [`BlockRef`] supersedes whatever they accumulated. Absent deltas are
-/// the common case — Dray emits none — so
+/// the common case — Lathe emits none — so
 /// consumers must render correctly without them.
 /// Tagged on `delta`, not `type`: [`AgentEventPayload::Delta`] is a newtype
 /// variant, so these fields flatten into the payload object alongside its own
@@ -563,7 +563,7 @@ pub fn now_rfc3339() -> String {
 }
 
 /// Unix seconds → RFC3339, for wire fields carrying an epoch timestamp where
-/// this model uses strings — Dray's `resetsAt`, notably.
+/// this model uses strings — Lathe's `resetsAt`, notably.
 pub fn rfc3339_from_unix(secs: i64) -> String {
     rfc3339(secs, 0)
 }

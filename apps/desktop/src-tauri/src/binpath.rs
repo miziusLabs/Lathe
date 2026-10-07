@@ -1,7 +1,7 @@
 //! Finding agent binaries when the app wasn't launched from a shell.
 //!
 //! A bundled `.app` started from Finder or the Dock inherits `launchd`'s
-//! minimal environment rather than the user's PATH. Resolve Dray once and reuse
+//! minimal environment rather than the user's PATH. Resolve Lathe once and reuse
 //! it: the login-shell probe on Unix costs real time, and the answer cannot
 //! change while the app runs.
 
@@ -112,7 +112,7 @@ fn search_path(bin: &str) -> Option<PathBuf> {
 /// inherits this process's `PATH`, and a bundled app launched from Finder or
 /// Explorer may hold none of these. So a `dray` the user has installed is
 /// invisible to the agent unless these are put back — the same failure this
-/// module exists to solve for Dray, one layer out.
+/// module exists to solve for Lathe, one layer out.
 pub fn known_dirs() -> Vec<PathBuf> {
     let Some(home) = dirs::home_dir() else {
         return Vec::new();
@@ -134,9 +134,9 @@ pub fn known_dirs() -> Vec<PathBuf> {
             PathBuf::from("/usr/local/bin"),
         ]);
 
-        // Dray is commonly installed through npm under nvm. Those directories
+        // Lathe is commonly installed through npm under nvm. Those directories
         // are not stable enough to list statically, but they must be in a
-        // child's PATH as well as in the resolver's search path because Dray is
+        // child's PATH as well as in the resolver's search path because Lathe is
         // a Node script.
         if let Ok(versions) = std::fs::read_dir(home.join(".nvm/versions/node")) {
             dirs.extend(versions.flatten().map(|entry| entry.path().join("bin")));

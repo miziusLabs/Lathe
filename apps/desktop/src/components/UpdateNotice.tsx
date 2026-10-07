@@ -188,8 +188,8 @@ export default function UpdateNotice({
         variant="ghost"
         className="w-full justify-start px-1.5 text-ui"
         disabled={disabled}
-        title={`Dray ${state.version}: ${label}`}
-        aria-label={`Dray ${state.version}: ${label}`}
+        title={`Lathe ${state.version}: ${label}`}
+        aria-label={`Lathe ${state.version}: ${label}`}
         onClick={() => {
           if (state.phase === "available" || state.phase === "error") retry();
           else if (state.phase === "ready") void install();

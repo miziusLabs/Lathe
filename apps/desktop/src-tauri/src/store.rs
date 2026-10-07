@@ -56,7 +56,7 @@ pub struct SessionIndexItem {
     /// the user last picked instead of resetting to a default.
     #[serde(default)]
     pub model: ModelId,
-    /// The concrete provider/model selected when the harness is Dray.
+    /// The concrete provider/model selected when the harness is Lathe.
     #[serde(default)]
     #[serde(alias = "piModel")]
     pub agent_model: Option<AgentModel>,
@@ -387,7 +387,7 @@ pub fn session_branch(item: &SessionIndexItem, observed: Option<&str>) -> Option
 /// They are not mounted into Docker; Cloud state lives in Docker volumes.
 pub fn cloud_path(id: &str) -> String {
     app_home_dir()
-        .expect("a Dray data directory is required for Clouds")
+        .expect("a Lathe data directory is required for Clouds")
         .join("cloud")
         .join(id)
         .to_string_lossy()

@@ -1,6 +1,6 @@
-# Dray repository guide
+# Lathe repository guide
 
-Dray is a Tauri 2 desktop application for running coding-agent sessions through a native chat UI. The agent is implemented in Rust in `packages/agent`, embedded in the desktop binary and built separately for Docker. ChatGPT OAuth provides access to the account-specific OpenAI model catalog. The frontend is React 19 + Vite 7 + Tailwind CSS 4; the backend is Rust and owns process/session management, persistence, Git/GitHub integration, file indexing, attachments, notifications, and Docker-backed Cloud Sessions.
+Lathe is a Tauri 2 desktop application for running coding-agent sessions through a native chat UI. The agent is implemented in Rust in `packages/agent`, embedded in the desktop binary and built separately for Docker. ChatGPT OAuth provides access to the account-specific OpenAI model catalog. The frontend is React 19 + Vite 7 + Tailwind CSS 4; the backend is Rust and owns process/session management, persistence, Git/GitHub integration, file indexing, attachments, notifications, and Docker-backed Cloud Sessions.
 
 This file is the implementation map for agents working in this repository. Keep the user-facing overview in `README.md` concise; update this file when components, major behavior, or repository structure change.
 
@@ -20,9 +20,9 @@ This file is the implementation map for agents working in this repository. Keep 
 
 ## Main product features
 
-- Native desktop chat UI for Dray coding-agent sessions.
+- Native desktop chat UI for Lathe coding-agent sessions.
 - Multiple persistent sessions with search, unread/waiting/working state, pinning, settling/archiving, deletion, forking, and parent/child nesting.
-- Local Sessions that run in a selected project checkout and Cloud Sessions that run the native Dray agent inside an isolated Docker container and persistent Docker volume.
+- Local Sessions that run in a selected project checkout and Cloud Sessions that run the native Lathe agent inside an isolated Docker container and persistent Docker volume.
 - Project picker with attach, rename, delete-from-picker, manual ordering, and remembered selection.
 - Git branch discovery and switching, including dirty-worktree handling before checkout.
 - Account-specific OpenAI model catalog with model selection, reasoning/effort selection, configurable model cycling, and separate model/effort preferences for generated session titles.
@@ -195,13 +195,13 @@ Files in `src-tauri/src/`:
 - `models/models.rs` — model IDs, OpenAI account model metadata, effort levels, and configured fallback model.
 - `events/events.rs` — shared serializable event/domain model exported to TypeScript.
 - `events/usage.rs` — token/context usage normalization.
-- `harness/harness.rs` — harness abstraction and selection; Dray native agent only.
+- `harness/harness.rs` — harness abstraction and selection; Lathe native agent only.
 - `harness/dray/dray.rs` — native process/Docker transport, auth delivery, persistence, and snapshots.
 - `harness/dray/parser.rs` — native JSON-line event parsing.
 - `harness/dray/mapper.rs` — maps native runtime events into the normalized event model.
 - `harness/dray/commands.rs` — account model catalog and `.agents/skills` discovery.
 - `account.rs` — loopback OAuth, PKCE, identity verification, serialized refresh, credential storage, cancellation, and revocation. `account/credential_store.rs` splits Windows credentials into bounded OS credential entries, publishing each complete generation through a manifest while retaining compatibility with older single-entry credentials.
-- `usage/codex.rs` — read-only local Codex usage credentials from `CODEX_HOME/auth.json` (default `~/.codex`) or the native Codex credential store on macOS/Windows; requires a matching Dray email and any known workspace ID. Codex owns refresh and persistence.
+- `usage/codex.rs` — read-only local Codex usage credentials from `CODEX_HOME/auth.json` (default `~/.codex`) or the native Codex credential store on macOS/Windows; requires a matching Lathe email and any known workspace ID. Codex owns refresh and persistence.
 - `usage.rs` — account-wide Codex plan limits from `/backend-api/wham/usage`, following the official Codex client with backend-only ChatGPT OAuth credentials; exposes five-hour and weekly windows.
 
 The frontend-facing Tauri command surface covers session send/read/control, attachments, models, commands/skills, file search, projects, branches, Git diffs/history/status, session flags/forks/deletion, notifications, PR operations, and quit confirmation. Add new native capabilities through a narrow command in `lib.rs` and keep implementation in the owning module.
@@ -211,7 +211,7 @@ The frontend-facing Tauri command surface covers session send/read/control, atta
 Cloud mode is local Docker isolation, not a hosted service. `src-tauri/src/sandbox.rs` creates one container per live session and one persistent volume per cloud workspace. The selected project is not bind-mounted or cloned automatically; the agent starts in the sandbox and performs any repository setup it needs.
 
 The image is defined by `apps/desktop/sandbox/Dockerfile` and launched through
-`sandbox-entrypoint.sh`. A Rust build stage creates `dray-agent`; the runtime
+`sandbox-entrypoint.sh`. A Rust build stage creates `lathe-agent`; the runtime
 includes Java 21, Java 25, Node.js 24, GitHub CLI, and Git. Host `~/.mizius/skills`
 is mounted read-only. History lives in the persistent workspace volume.
 OAuth credentials remain on the host; short-lived access tokens travel through
@@ -243,7 +243,7 @@ grouped across model requests until visible non-tool output appears.
 Use the documented direct Sign in with ChatGPT token-sharing flow. Models and
 reasoning levels come from the account catalog; do not hardcode supported models.
 Plan usage follows the official Codex client's usage GET; do not probe unrelated
-private quota endpoints. SIWC tokens may be denied by the Codex usage endpoint. On HTTP 401/403 only, usage can read a matching local Codex login without refreshing or modifying it; label that source and distinguish Codex account limits from Dray’s per-app allowance. Missing, stale, mismatched, or denied plan limits must remain unavailable.
+private quota endpoints. SIWC tokens may be denied by the Codex usage endpoint. On HTTP 401/403 only, usage can read a matching local Codex login without refreshing or modifying it; label that source and distinguish Codex account limits from Lathe’s per-app allowance. Missing, stale, mismatched, or denied plan limits must remain unavailable.
 Model discovery sends a catalog compatibility `client_version` independently
 of the app version, so newer account models are included. Reasoning preferences
 are keyed by provider and model, and unsupported choices resolve to each model's
@@ -258,6 +258,16 @@ are subsets of input/output, not additional consumption.
 Regenerate frontend types with `cargo test` or `cargo run --bin export-types`
 from `apps/desktop/src-tauri`. Run standalone checks from the repository root
 with `cargo test --manifest-path packages/agent/Cargo.toml`.
+
+## Branding and compatibility
+
+The product is Lathe with bundle ID `com.mizius.lathe` (development:
+`com.mizius.lathe.dev`). Keep the existing logo assets. The desktop package and
+standalone executable are `lathe` and `lathe-agent`; the default Cloud image is
+`lathe-cloud:latest`. Legacy `dray` harness/model
+IDs, tool namespaces, preferences, data directories, environment variables, and
+Docker resource names remain stable to preserve existing sessions and workspaces.
+The GitHub repository and updater endpoint still use `miziusLabs/Dray`.
 
 ## Important interaction rules
 

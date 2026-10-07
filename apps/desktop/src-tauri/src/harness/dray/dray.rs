@@ -1,8 +1,8 @@
-//! Dray Coding Agent process integration.
+//! Lathe Coding Agent process integration.
 //!
-//! Dray keeps one native child alive, discovers global and
+//! Lathe keeps one native child alive, discovers global and
 //! project skills, and sends every event as one JSON line. The app keeps its
-//! own normalized log while Dray keeps the model-context session file.
+//! own normalized log while Lathe keeps the model-context session file.
 
 use crate::events::{AgentEvent, AgentEventPayload};
 use crate::harness::Harness::Dray;
@@ -42,9 +42,9 @@ pub async fn delete_session_data(session_id: &str) -> Result<()> {
         Err(error) => Err(error.into()),
     }
 }
-/// Starts one persistent Dray RPC child for a Dray session.
+/// Starts one persistent Lathe RPC child for a Lathe session.
 ///
-/// Local Dray sessions use a stable Dray-owned directory. Cloud sessions use a
+/// Local Lathe sessions use a stable Lathe-owned directory. Cloud sessions use a
 /// private Docker volume with host skills mounted read-only.
 pub async fn init(
     session_id: &str,
@@ -66,7 +66,7 @@ pub async fn init(
         tokio::fs::create_dir_all(&session_dir).await?;
         session_dir
             .to_str()
-            .context("Dray session directory is not valid UTF-8")?
+            .context("Lathe session directory is not valid UTF-8")?
             .to_string()
     };
     let mut args = vec![
@@ -89,8 +89,8 @@ pub async fn init(
         args.extend(["--context-window".into(), context.to_string()]);
     }
     if let Some(parent) = fork_from {
-        // Dray performs the lazy fork while opening RPC mode and keeps the new
-        // transcript under the id Dray already assigned to this session.
+        // Lathe performs the lazy fork while opening RPC mode and keeps the new
+        // transcript under the id Lathe already assigned to this session.
         args.extend([
             "--fork".to_string(),
             parent.to_string(),
@@ -134,7 +134,7 @@ pub async fn init(
     let stdin = Arc::new(Mutex::new(
         child.stdin.take().context("failed to take stdin")?,
     ));
-    // Seed older sessions from Dray's transcript without touching their logs.
+    // Seed older sessions from Lathe's transcript without touching their logs.
     // The runtime ignores this command when its own context already exists.
     let history = store::list_session_events(session_id).await?;
     let input = history
@@ -219,13 +219,13 @@ pub async fn init(
         )
         .await
         {
-            eprintln!("Failed to read Dray stdout: {error}");
+            eprintln!("Failed to read Lathe stdout: {error}");
         }
     });
 
     tokio::spawn(async move {
         if let Err(error) = read_stderr(stderr).await {
-            eprintln!("Failed to read Dray stderr: {error}");
+            eprintln!("Failed to read Lathe stderr: {error}");
         }
     });
 
@@ -250,7 +250,7 @@ pub async fn init(
     })
 }
 
-/// Reads and persists Dray's normalized events one RPC line at a time.
+/// Reads and persists Lathe's normalized events one RPC line at a time.
 async fn read_stdout(
     stdout: ChildStdout,
     session_id: &str,
@@ -287,11 +287,11 @@ async fn read_stdout(
         };
 
         if matches!(runtime_event, AgentRpcEvent::Unrecognized) {
-            record_failure(session_id, "unknown_subtype", "unmodeled Dray event", &line).await;
+            record_failure(session_id, "unknown_subtype", "unmodeled Lathe event", &line).await;
         }
 
         let is_session = matches!(&runtime_event, AgentRpcEvent::Session { .. });
-        // A Dray turn is one model response plus its tool calls. Requesting stats
+        // A Lathe turn is one model response plus its tool calls. Requesting stats
         // here updates the context meter between model turns instead of making
         // it wait for the whole agent operation to settle.
         let is_turn_end = matches!(&runtime_event, AgentRpcEvent::TurnEnd { .. });
@@ -303,7 +303,7 @@ async fn read_stdout(
             }
         };
 
-        // Dray can answer a stats request sent immediately after spawn with the
+        // Lathe can answer a stats request sent immediately after spawn with the
         // empty pre-session value. Wait until its session event has been read so
         // a resumed session's initial reading cannot race with the first turn
         // and overwrite the real context usage with zero.
@@ -362,7 +362,7 @@ async fn read_stdout(
 
             // Deltas are streaming previews. Their
             // committed counterparts are the assistant message and settled
-            // event, so they do not belong in Dray's append-only transcript.
+            // event, so they do not belong in Lathe's append-only transcript.
             // Request usage and context stats are persisted; they are the
             // source for usage indicators and the composer context meter.
             let transient = match &agent_event.payload {
@@ -427,7 +427,7 @@ async fn read_stdout(
 
     if !stopped.swap(true, Relaxed) && status.lock().await.turn_in_flight() {
         let mut terminal = mapper.map(AgentRpcEvent::MessageEnd {
-            message: serde_json::json!({"role":"assistant","content":[],"stopReason":"error","errorMessage":"Dray's agent process exited unexpectedly. Send a follow-up to resume."}),
+            message: serde_json::json!({"role":"assistant","content":[],"stopReason":"error","errorMessage":"Lathe's agent process exited unexpectedly. Send a follow-up to resume."}),
         })?;
         terminal.extend(mapper.map(AgentRpcEvent::AgentSettled)?);
         for event in terminal {
@@ -443,7 +443,7 @@ async fn read_stdout(
     Ok(())
 }
 
-/// Requests Dray's current context estimate. The response is handled by the
+/// Requests Lathe's current context estimate. The response is handled by the
 /// same stdout mapper as every other RPC record.
 async fn request_context_stats(stdin: &Arc<Mutex<ChildStdin>>) -> Result<()> {
     write_line(
@@ -456,7 +456,7 @@ async fn request_context_stats(stdin: &Arc<Mutex<ChildStdin>>) -> Result<()> {
     .await
 }
 
-/// Logs a malformed or unsupported Dray record without stopping the read loop.
+/// Logs a malformed or unsupported Lathe record without stopping the read loop.
 async fn record_failure(session_id: &str, stage: &str, detail: &str, raw: &str) {
     eprintln!("[dray {stage} err] {detail}\n[{stage} err] raw line: {raw}");
     if let Err(error) = store::record_parse_failure(session_id, stage, detail, raw).await {
@@ -464,11 +464,11 @@ async fn record_failure(session_id: &str, stage: &str, detail: &str, raw: &str) 
     }
 }
 
-/// Copies Dray's stderr to the app process for diagnostics.
+/// Copies Lathe's stderr to the app process for diagnostics.
 async fn read_stderr(stderr: ChildStderr) -> Result<()> {
     let mut lines = BufReader::new(stderr).lines();
     while let Some(line) = lines.next_line().await? {
-        eprintln!("Dray stderr: {line}");
+        eprintln!("Lathe stderr: {line}");
     }
     Ok(())
 }

@@ -74,7 +74,7 @@ fn usage_request(
 
 fn unavailable_message(status: reqwest::StatusCode) -> String {
     format!(
-        "ChatGPT plan usage is unavailable (HTTP {}). Dray's ChatGPT connection may not support reading Codex limits. Sign in to Codex with the same ChatGPT account, then refresh, or view usage in ChatGPT.",
+        "ChatGPT plan usage is unavailable (HTTP {}). Lathe's ChatGPT connection may not support reading Codex limits. Sign in to Codex with the same ChatGPT account, then refresh, or view usage in ChatGPT.",
         status.as_u16()
     )
 }

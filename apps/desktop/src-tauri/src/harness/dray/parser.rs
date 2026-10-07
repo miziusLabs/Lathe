@@ -2,7 +2,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-/// A Dray RPC event. The protocol is intentionally modeled with `Value` for
+/// A Lathe RPC event. The protocol is intentionally modeled with `Value` for
 /// message and tool payloads because extensions can register arbitrary schemas.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -179,7 +179,7 @@ pub enum AgentRpcEvent {
     Unrecognized,
 }
 
-/// Usage attached to Dray's streaming assistant updates and final messages.
+/// Usage attached to Lathe's streaming assistant updates and final messages.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct AgentRpcUsage {
@@ -202,7 +202,7 @@ pub struct AgentRpcCost {
     pub total: Option<f64>,
 }
 
-/// Delta events nested inside Dray's `message_update` record.
+/// Delta events nested inside Lathe's `message_update` record.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum AssistantMessageEvent {
@@ -268,7 +268,7 @@ pub enum AssistantMessageEvent {
     Unrecognized,
 }
 
-/// Parses one newline-delimited Dray RPC record.
+/// Parses one newline-delimited Lathe RPC record.
 pub fn parse_line(line: &str) -> Result<AgentRpcEvent> {
     Ok(serde_json::from_str(line)?)
 }

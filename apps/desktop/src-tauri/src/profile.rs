@@ -112,7 +112,7 @@ pub async fn picture_path() -> Result<Option<String>> {
     Ok(None)
 }
 
-/// Validates and copies a user-selected image into Dray's private data directory.
+/// Validates and copies a user-selected image into Lathe's private data directory.
 pub async fn save_picture(source_path: &str) -> Result<String> {
     let source = Path::new(source_path);
     let format = supported_format(source).context(

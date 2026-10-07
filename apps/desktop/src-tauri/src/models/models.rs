@@ -1,6 +1,6 @@
-//! The model/effort menu the UI renders and Dray accepts.
+//! The model/effort menu the UI renders and Lathe accepts.
 //!
-//! OpenAI supplies the account catalog. Dray stores the selected provider/model
+//! OpenAI supplies the account catalog. Lathe stores the selected provider/model
 //! pair and never maintains a second, stale model list.
 
 use serde::{Deserialize, Serialize};
@@ -75,7 +75,7 @@ impl Default for ModelId {
 }
 
 impl ModelId {
-    /// Dray resolves the concrete provider/model itself, so no CLI alias is
+    /// Lathe resolves the concrete provider/model itself, so no CLI alias is
     /// needed here. The field remains for the serialized model contract.
     pub fn as_arg(self) -> Option<&'static str> {
         None
@@ -98,7 +98,7 @@ pub struct AgentModel {
 #[ts(export, export_to = "events.ts")]
 #[serde(rename_all = "camelCase")]
 pub struct Model {
-    /// The harness-specific model family. Dray models carry their provider and
+    /// The harness-specific model family. Lathe models carry their provider and
     /// concrete id in [`agent_model`].
     pub id: ModelId,
     #[serde(alias = "piModel")]
@@ -126,7 +126,7 @@ pub fn configured_agent_model() -> Model {
     }
 }
 
-/// Returns the model specification for a selected id. Dray's catalog is loaded
+/// Returns the model specification for a selected id. Lathe's catalog is loaded
 /// separately because supported models come from the authenticated catalog.
 pub fn find_model(id: ModelId, agent_model: Option<&AgentModel>) -> Option<Model> {
     if id == ModelId::Dray {

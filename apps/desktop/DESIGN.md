@@ -1,6 +1,6 @@
 # Design notes
 
-Why Dray's surfaces are shaped the way they are. [CLAUDE.md](../../CLAUDE.md) holds the
+Why Lathe's surfaces are shaped the way they are. [CLAUDE.md](../../CLAUDE.md) holds the
 operating manual — protocol, git mechanics, conventions, traps; this file holds the
 reasoning behind the visual and interaction design.
 
@@ -19,7 +19,7 @@ Same writing rules as CLAUDE.md: why, not what. Cut any word doing no work.
 
 **Shortcut belong in real tooltip, not on `title`.** System tooltip can't hold keycap and look like OS not app. Use `Tooltip`/`TooltipContent` with `Kbd`/`KbdGroup` (see `ModelSelector`, `ComposerToolbar`), put plain name on `aria-label`. Reserve `title` for text app is _truncating_ — shortened path, clipped name — where tooltip restore information layout removed, not add information reader already have.
 
-**Window is glass, and body's fill = only hole in it.** Vibrancy set in [tauri.conf.json](src-tauri/tauri.conf.json), not Rust: `windowEffects.effects: ["sidebar"]` put NSVisualEffectView behind webview, `transparent: true` let webview show it. Second flag drag `macOSPrivateApi: true` and `macos-private-api` Cargo feature with it, costing App Store eligibility Dray never wanted. Effect whole-window, so material picked for blur amount only; tint = ours.
+**Window is glass, and body's fill = only hole in it.** Vibrancy set in [tauri.conf.json](src-tauri/tauri.conf.json), not Rust: `windowEffects.effects: ["sidebar"]` put NSVisualEffectView behind webview, `transparent: true` let webview show it. Second flag drag `macOSPrivateApi: true` and `macos-private-api` Cargo feature with it, costing App Store eligibility Lathe never wanted. Effect whole-window, so material picked for blur amount only; tint = ours.
 
 Feature arrive late, so **first `pnpm tauri dev` after turning this on need manual restart** — CLI patch `Cargo.toml` when it read new config, but already-spawned app predate relinked binary, and `transparent` compile out entirely without feature. Read as "vibrancy don't work", not as stale build.
 
@@ -141,13 +141,13 @@ Hover delay symmetric (150ms): keep cursor merely passing through from popping r
 
 ## Cloud sandbox
 
-Cloud is the only isolated-session mode. A Cloud Session starts the native Dray agent through
+Cloud is the only isolated-session mode. A Cloud Session starts the native Lathe agent through
 Docker with a private named volume and an empty `/home/agent/workspace`. The
 selected project is retained only as grouping and branch metadata; it is never
 cloned, mounted, or used as the container's working tree.
 
 The image is built by `scripts/build-sandbox.ps1` and includes Java 21, Java 25,
-Node.js 24, Git, GitHub CLI, and Dray. The host `~/.mizius/skills` directory is a
+Node.js 24, Git, GitHub CLI, and Lathe. The host `~/.mizius/skills` directory is a
 read-only mount for standard SKILL.md files. Agent history remains private to
 the volume. The desktop delivers short-lived OpenAI access tokens through stdin;
 OAuth credentials stay on the host.

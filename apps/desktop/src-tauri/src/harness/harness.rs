@@ -1,4 +1,4 @@
-//! The Dray Coding Agent integration used by Dray.
+//! The Lathe Coding Agent integration used by Lathe.
 
 #[path = "dray/dray.rs"]
 pub mod dray;
@@ -10,7 +10,7 @@ use ts_rs::TS;
 #[ts(export, export_to = "events.ts")]
 #[serde(rename_all = "snake_case")]
 pub enum Harness {
-    /// Legacy persisted sessions are resumed with Dray rather than rejected.
+    /// Legacy persisted sessions are resumed with Lathe rather than rejected.
     #[serde(alias = "pi", alias = "claude_code", alias = "codex")]
     Dray,
 }

@@ -442,7 +442,7 @@ async fn fork_session(
         .map_err(|e| e.to_string())
 }
 
-/// Stops all work for a session immediately. The live Dray child is terminated;
+/// Stops all work for a session immediately. The live Lathe child is terminated;
 /// the next prompt resumes the persisted session in a fresh process.
 #[tauri::command]
 async fn interrupt_session(

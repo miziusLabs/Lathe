@@ -60,11 +60,11 @@ type ChatInputProps = {
   /// re-reads each one — nothing but paths crosses the bridge, so a pinned
   /// screenshot is never uploaded twice.
   onSend: (message: string, attachmentPaths: string[], queueAfterTurn?: boolean) => void;
-  /// Dray-provided skills for the `$` picker. Empty until the backend's probe
-  /// lands, and empty forever if it failed — Dray commands remain available and
+  /// Lathe-provided skills for the `$` picker. Empty until the backend's probe
+  /// lands, and empty forever if it failed — Lathe commands remain available and
   /// text typed by hand still works.
   commands?: SlashCommand[];
-  /// The shown model catalog and controls are also used by Dray's `/model`,
+  /// The shown model catalog and controls are also used by Lathe's `/model`,
   /// `/models`, and `/effort` commands, so those completions do not need a
   /// second picker path.
   models: Model[];
@@ -232,8 +232,8 @@ export default function ChatInput({
   const segments = useMemo(() => highlightSegments(message), [message]);
   const highlighted = segments.some((segment) => segment.kind !== "text");
 
-  // Dray owns slash commands. Dray only supplies skills, which remain useful as
-  // `$` prompt completions without allowing Dray's command registry to shape the
+  // Lathe owns slash commands. Lathe only supplies skills, which remain useful as
+  // `$` prompt completions without allowing Lathe's command registry to shape the
   // command surface.
   const availableCommands = useMemo(
     () => [...drayCommands(isNewTask), ...commands],
@@ -642,7 +642,7 @@ export default function ChatInput({
     // pressing Enter is asking about the screenshot.
     if (!trimmed && !attachments.length) return;
 
-    // Internal commands change Dray state and must never become Dray prompts.
+    // Internal commands change Lathe state and must never become Lathe prompts.
     // Skills and unknown slash text retain the ordinary send path.
     if (runInternalCommand(trimmed)) {
       setMessage("");

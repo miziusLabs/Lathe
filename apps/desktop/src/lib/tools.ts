@@ -9,7 +9,7 @@ function field(input: JsonValue, key: string): string | null {
   return typeof value === "string" ? value : null;
 }
 
-/// The interesting argument, shown next to the tool name. Dray leaves
+/// The interesting argument, shown next to the tool name. Lathe leaves
 /// `title` null on every call, so the row has to derive its own summary and each
 /// tool keeps whichever field actually identifies the work.
 export function toolSummary(

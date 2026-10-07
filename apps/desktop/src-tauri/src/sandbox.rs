@@ -1,8 +1,8 @@
 //! Docker sandbox integration for Cloud sessions.
 //!
 //! A Cloud session gets a disposable container and a private named volume. The
-//! volume keeps Dray's conversation and workspace between turns, but the host
-//! project is never mounted into it. Dray configuration is copied from a
+//! volume keeps Lathe's conversation and workspace between turns, but the host
+//! project is never mounted into it. Lathe configuration is copied from a
 //! read-only seed mount by the image entrypoint, while GitHub credentials stay
 //! in the container environment for the lifetime of the container only.
 
@@ -12,7 +12,7 @@ use std::process::Stdio;
 use tokio::process::Command;
 
 const CLOUD_WORKSPACE: &str = "/home/agent/workspace";
-const DEFAULT_IMAGE: &str = "dray-cloud:latest";
+const DEFAULT_IMAGE: &str = "lathe-cloud:latest";
 const VOLUME_PREFIX: &str = "dray-cloud-";
 const CONTAINER_PREFIX: &str = "dray-cloud-";
 
@@ -30,7 +30,7 @@ pub fn volume_name(cloud_name: &str) -> String {
 }
 
 pub fn container_name(session_id: &str) -> String {
-    // Session ids are UUIDs minted by Dray, but keep this constrained because
+    // Session ids are UUIDs minted by Lathe, but keep this constrained because
     // this name is handed directly to Docker as an argument.
     let safe: String = session_id
         .chars()
@@ -117,7 +117,7 @@ pub async fn ensure_image() -> Result<()> {
     )
 }
 
-/// Builds a Docker command that runs Dray through the image entrypoint.
+/// Builds a Docker command that runs Lathe through the image entrypoint.
 ///
 /// The session manager verifies the image before indexing a new or resumed
 /// Cloud. Do not inspect it again here: every inspection launches another
@@ -134,7 +134,7 @@ pub async fn agent_command(
     agent_args: &[String],
 ) -> Result<Command> {
     let home = dirs::home_dir().context("could not resolve home directory")?;
-    dray_agent::skills::install_bundled()
+    lathe_agent::skills::install_bundled()
         .context("could not install bundled skills in ~/.mizius/skills")?;
     let skills = home.join(".mizius").join("skills");
     let volume = volume_name(cloud_name);
@@ -174,13 +174,13 @@ pub async fn agent_command(
         command.arg("--env").arg("GITHUB_TOKEN");
     }
 
-    command.arg(image()).arg("dray-agent").args(agent_args);
+    command.arg(image()).arg("lathe-agent").args(agent_args);
     Ok(command)
 }
 
 /// Returns the host's GitHub token without writing it anywhere. Agentsmith uses
-/// a configured token when available; Dray also accepts the standard local
-/// `gh auth token` store so existing Dray GitHub features work unchanged.
+/// a configured token when available; Lathe also accepts the standard local
+/// `gh auth token` store so existing Lathe GitHub features work unchanged.
 async fn github_token() -> Option<String> {
     for key in ["GITHUB_TOKEN", "GH_TOKEN"] {
         if let Ok(value) = std::env::var(key) {

@@ -17,5 +17,5 @@ Each commit should also contain a detailed description.
 Unless the user requests otherwise, attach `@drayai` as a co-author to the description.
 
 ```
-Co-authored-by: Dray <drayai@users.noreply.github.com>
+Co-authored-by: Lathe <drayai@users.noreply.github.com>
 ```

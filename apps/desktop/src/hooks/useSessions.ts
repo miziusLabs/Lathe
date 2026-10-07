@@ -27,7 +27,7 @@ import { AgentEvent, BranchList, Effort, Harness, Model, ModelId, AgentModel, Pr
 const DEFAULT_MODEL: ModelId = "dray";
 
 /// A stretch where the agent is busy and the transcript has nothing to show —
-/// a request in flight, or a thinking block, which Dray streams as an
+/// a request in flight, or a thinking block, which Lathe streams as an
 /// *empty* string with only a token estimate and so renders nothing at all from
 /// open to commit.
 ///
@@ -470,7 +470,7 @@ const handleCancelQueued = async (): Promise<QueuedMessage | null> => {
 };
 
 // Stops the session's process tree. The backend removes the live child before
-// returning, and the next send resumes the persisted Dray session in a new child.
+// returning, and the next send resumes the persisted Lathe session in a new child.
 const handleInterrupt = async () => {
   if (!selectedSessionId) return;
   try {
@@ -1365,7 +1365,7 @@ const contextUsage: { used: number; max: number } | null = (() => {
 
     if (p.type === "usage_update" && p.contextWindow) {
       // `get_session_stats` is emitted as a context-only usage update. It is
-      // authoritative for both values and is persisted by the Dray reader, so a
+      // authoritative for both values and is persisted by the Lathe reader, so a
       // resumed session can restore the meter without waiting for a new turn.
       if (!usedSettled) {
         used = p.contextWindow.usedTokens;

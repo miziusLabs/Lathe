@@ -21,7 +21,7 @@ export default function DeveloperDialog({
       <DialogContent className="max-w-120">
         <DialogHeader>
           <DialogTitle>Developer</DialogTitle>
-          <DialogDescription>Development-only tools for testing Dray.</DialogDescription>
+          <DialogDescription>Development-only tools for testing Lathe.</DialogDescription>
         </DialogHeader>
 
         <div className="flex items-center justify-between gap-4">

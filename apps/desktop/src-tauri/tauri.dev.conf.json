@@ -1,11 +1,11 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Dray-dev",
-  "identifier": "com.yogesh.dray.dev",
+  "productName": "Lathe-dev",
+  "identifier": "com.mizius.lathe.dev",
   "app": {
     "windows": [
       {
-        "title": "Dray dev",
+        "title": "Lathe dev",
         "width": 1200,
         "height": 800,
         "minWidth": 720,

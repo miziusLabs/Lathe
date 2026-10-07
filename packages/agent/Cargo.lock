@@ -113,24 +113,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dray-agent"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "base64",
- "dirs",
- "libc",
- "reqwest",
- "rustls",
- "serde",
- "serde_json",
- "serde_yaml",
- "tokio",
- "uuid",
- "windows-sys 0.61.2",
-]
-
-[[package]]
 name = "equivalent"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -529,6 +511,24 @@ dependencies = [
  "cfg-if",
  "futures-util",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "lathe-agent"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base64",
+ "dirs",
+ "libc",
+ "reqwest",
+ "rustls",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tokio",
+ "uuid",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

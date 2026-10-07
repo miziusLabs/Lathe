@@ -4,8 +4,8 @@
 #[tokio::main]
 async fn main() {
     if std::env::args().any(|arg| arg == "--agent") {
-        if let Err(error) = dray_agent::run().await {
-            eprintln!("Dray agent: {error}");
+        if let Err(error) = lathe_agent::run().await {
+            eprintln!("Lathe agent: {error}");
             std::process::exit(1);
         }
         return;

@@ -133,7 +133,7 @@ pub async fn generate_title(
     if let Some(effort) = effort.filter(|e| *e != Effort::Off) {
         body["reasoning"] = serde_json::json!({"effort":effort.as_arg()});
     }
-    let result = timeout(DEADLINE, dray_agent::response(&token, body, false))
+    let result = timeout(DEADLINE, lathe_agent::response(&token, body, false))
         .await
         .context("title generation timed out")??;
     let raw = result["output"]

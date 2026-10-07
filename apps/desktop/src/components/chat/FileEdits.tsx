@@ -15,8 +15,8 @@ function diffLineClass(line: string): string {
   return "text-muted-foreground";
 }
 
-/// Dray reports edits first-class; Dray does not, so its edits arrive as
-/// ordinary `file_edit` tool calls and this renders only for Dray sessions.
+/// Lathe reports edits first-class; Lathe does not, so its edits arrive as
+/// ordinary `file_edit` tool calls and this renders only for Lathe sessions.
 export default function FileEdits({ edits }: { edits: FileEdit[] }) {
   if (!edits.length) return null;
 

@@ -2,11 +2,11 @@ $ErrorActionPreference = 'Stop'
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $image = if ([string]::IsNullOrWhiteSpace($env:DRAY_CLOUD_IMAGE)) {
-    'dray-cloud:latest'
+    'lathe-cloud:latest'
 } else {
     $env:DRAY_CLOUD_IMAGE
 }
-Write-Host "Building Dray Cloud sandbox image $image"
+Write-Host "Building Lathe Cloud sandbox image $image"
 & docker build `
     --file (Join-Path $root 'sandbox/Dockerfile') `
     --tag $image `

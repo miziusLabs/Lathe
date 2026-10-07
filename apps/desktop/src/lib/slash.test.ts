@@ -97,7 +97,7 @@ describe("filterCommands", () => {
     command("railway:deploy", "Deploy to Railway"),
     command("usage", "Show plan limits"),
     command("cost", "Token usage for this session"),
-    command("model", "Set the AI model for Dray"),
+    command("model", "Set the AI model for Lathe"),
   ];
 
   /// Stable sort plus an all-equal score means the CLI's own ordering survives,

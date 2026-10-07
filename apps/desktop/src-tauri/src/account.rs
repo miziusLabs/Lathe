@@ -1,4 +1,4 @@
-//! ChatGPT OAuth for Dray's own registered open-source client.
+//! ChatGPT OAuth for Lathe's own registered open-source client.
 //! Credentials stay in the native backend and OS credential store.
 use anyhow::{bail, Context, Result};
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
@@ -75,9 +75,9 @@ fn random() -> String {
 #[cfg(any(windows, target_os = "macos"))]
 fn credential_service() -> &'static str {
     if std::env::var("DRAY_PROFILE").is_ok_and(|profile| profile == "development") {
-        "com.yogesh.dray.dev.chatgpt"
+        "com.mizius.lathe.dev.chatgpt"
     } else {
-        "com.yogesh.dray.chatgpt"
+        "com.mizius.lathe.chatgpt"
     }
 }
 
@@ -271,7 +271,7 @@ pub async fn access_token() -> Result<String> {
         .split_whitespace()
         .any(|s| s == "chatgpt.tokens.use.direct")
     {
-        bail!("Authorize ChatGPT plan usage when connecting Dray.");
+        bail!("Authorize ChatGPT plan usage when connecting Lathe.");
     }
     Ok(c.access_token)
 }
@@ -322,7 +322,7 @@ pub async fn sign_out(app: &AppHandle) -> Result<()> {
         }
         .await;
         if revoked.is_err() {
-            next.error=Some("Signed out locally. Remote disconnection could not be confirmed; disconnect Dray in ChatGPT Settings if needed.".into());
+            next.error=Some("Signed out locally. Remote disconnection could not be confirmed; disconnect Lathe in ChatGPT Settings if needed.".into());
         }
     }
     app.emit("account_changed", next)?;
@@ -417,7 +417,7 @@ pub async fn begin(app: AppHandle) -> Result<()> {
             ("code_challenge", &challenge),
         ]);
         if returning.is_none() {
-            query.append_pair("agent_name_hint", "Dray");
+            query.append_pair("agent_name_hint", "Lathe");
         } else if let Some(c) = &returning {
             if !c.id_token.is_empty() {
                 query.append_pair("id_token_hint", &c.id_token);
@@ -457,7 +457,7 @@ pub async fn begin(app: AppHandle) -> Result<()> {
                     let subject=claims["sub"].as_str().context("Missing ChatGPT account identity")?.to_string();
                     if returning.as_ref().is_some_and(|c|c.subject!=subject) { bail!("ChatGPT account changed. Sign out before connecting another account."); }
                     let scope=tokens.scope.context("Missing ChatGPT permissions")?;
-                    if !scope.split_whitespace().any(|s|s=="chatgpt.tokens.use.direct") { bail!("Allow ChatGPT plan usage to use Dray's agent."); }
+                    if !scope.split_whitespace().any(|s|s=="chatgpt.tokens.use.direct") { bail!("Allow ChatGPT plan usage to use Lathe's agent."); }
                     let account_id=tokens.account_id.or_else(||account_id_from_claims(&claims));
                     let credentials=Credentials { client_id,subject,account_id,email:claims["email"].as_str().map(str::to_string),id_token,access_token:tokens.access_token,refresh_token:tokens.refresh_token.context("Missing ChatGPT refresh token")?,scope,expires_at:now()+tokens.expires_in };
                     let _guard=LOCK.get_or_init(||Mutex::new(())).lock().await;
@@ -465,7 +465,7 @@ pub async fn begin(app: AppHandle) -> Result<()> {
                     crate::harness::dray::commands::invalidate_model_catalog();
                     status()
                 }.await;
-                let body=if result.is_ok() { "Connected to ChatGPT. You can close this window and return to Dray." } else { "Sign-in failed. Return to Dray for details and try again." };
+                let body=if result.is_ok() { "Connected to ChatGPT. You can close this window and return to Lathe." } else { "Sign-in failed. Return to Lathe for details and try again." };
                 let _=reader.get_mut().write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",body.len()).as_bytes()).await;
                 return result;
             }

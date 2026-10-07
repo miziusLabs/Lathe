@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Dray",
+  "productName": "Lathe",
   "version": "0.8.4",
-  "identifier": "com.yogesh.dray",
+  "identifier": "com.mizius.lathe",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1422",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Dray",
+        "title": "Lathe",
         "width": 1200,
         "height": 800,
         "minWidth": 720,

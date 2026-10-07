@@ -1,7 +1,7 @@
 //! Token and cost accounting.
 //!
-//! The harnesses report disjoint things — Dray gives cost in USD and no
-//! rate limits here, Dray gives rate limits and never a cost — so nearly every
+//! The harnesses report disjoint things — Lathe gives cost in USD and no
+//! rate limits here, Lathe gives rate limits and never a cost — so nearly every
 //! field is optional. Show cost only when [`Usage::cost_usd`] is set and a
 //! context gauge only when [`Usage::context_window`] is set; neither is
 //! universal.
@@ -66,7 +66,7 @@ pub struct ModelUsage {
     pub web_search_requests: Option<u64>,
     pub cost_usd: Option<f64>,
     /// This model's context window. Also what the composer's gauge measures
-    /// against — see `context_window` in the Dray mapper.
+    /// against — see `context_window` in the Lathe mapper.
     pub context_window: Option<u64>,
     pub max_output_tokens: Option<u64>,
 }

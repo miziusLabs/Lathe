@@ -1,4 +1,4 @@
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    dray_agent::run().await
+    lathe_agent::run().await
 }

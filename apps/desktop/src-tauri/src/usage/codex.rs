@@ -78,7 +78,7 @@ fn parse(
         });
     let same_account = account_id.is_none_or(|id| id == codex_account_id);
     if !same_email || !same_account {
-        bail!("The local Codex login belongs to a different or unverified account. Sign in to Codex with the same ChatGPT account as Dray, or view usage in ChatGPT.");
+        bail!("The local Codex login belongs to a different or unverified account. Sign in to Codex with the same ChatGPT account as Lathe, or view usage in ChatGPT.");
     }
     if !access["exp"]
         .as_u64()
@@ -131,7 +131,7 @@ pub(super) fn load(email: Option<&str>, account_id: Option<&str>) -> Result<Cred
             { None }
         }
         Err(_) => bail!("Could not read the local Codex login. Open Codex or view usage in ChatGPT."),
-    }.context("Dray's ChatGPT connection does not support reading Codex limits. Sign in to Codex with the same ChatGPT account, then refresh, or view usage in ChatGPT.")?;
+    }.context("Lathe's ChatGPT connection does not support reading Codex limits. Sign in to Codex with the same ChatGPT account, then refresh, or view usage in ChatGPT.")?;
     let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
     parse(&json, email, account_id, now)
 }

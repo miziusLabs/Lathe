@@ -46,7 +46,7 @@ pub fn invalidate_model_catalog() {
     ACCOUNT_GENERATION.fetch_add(1, Ordering::SeqCst);
 }
 
-// The catalog is gated by client compatibility, independently of Dray's app
+// The catalog is gated by client compatibility, independently of Lathe's app
 // version. Omitting this returns a legacy catalog that excludes newer models.
 const CATALOG_CLIENT_VERSION: &str = "0.159.0";
 
@@ -54,7 +54,7 @@ fn catalog_request(client: &reqwest::Client, token: &str) -> reqwest::RequestBui
     client
         .get(format!(
             "{}/models?client_version={CATALOG_CLIENT_VERSION}",
-            dray_agent::API
+            lathe_agent::API
         ))
         .bearer_auth(token)
 }
@@ -71,7 +71,7 @@ pub struct SlashCommand {
 }
 
 pub async fn list_commands(cwd: &str) -> Result<Vec<SlashCommand>> {
-    Ok(dray_agent::skills::discover(std::path::Path::new(cwd))
+    Ok(lathe_agent::skills::discover(std::path::Path::new(cwd))
         .into_iter()
         .map(|skill| SlashCommand {
             name: skill.name,

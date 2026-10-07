@@ -4,9 +4,9 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const image = process.env.DRAY_CLOUD_IMAGE?.trim() || "dray-cloud:latest";
+const image = process.env.DRAY_CLOUD_IMAGE?.trim() || "lathe-cloud:latest";
 
-console.log(`Building Dray Cloud sandbox image ${image}`);
+console.log(`Building Lathe Cloud sandbox image ${image}`);
 const child = spawn(
   "docker",
   ["build", "--file", resolve(root, "sandbox/Dockerfile"), "--tag", image, resolve(root, "../..")],

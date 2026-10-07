@@ -339,7 +339,7 @@ function UpdateCheckRow({
     <SettingRow
       id={id}
       label="App updates"
-      description="Check for a newer version of Dray. Automatic checks run every 15 minutes."
+      description="Check for a newer version of Lathe. Automatic checks run every 15 minutes."
     >
       <Button
         id={id}

@@ -125,7 +125,7 @@ export default function ChatGptAccount() {
             <p className="text-ui break-words text-muted-foreground">
               {account?.signedIn
                 ? account.email ?? "Connected to ChatGPT"
-                : "Connect ChatGPT to use Dray's built-in coding agent."}
+                : "Connect ChatGPT to use Lathe's built-in coding agent."}
             </p>
           </div>
         </div>

@@ -1,6 +1,6 @@
-//! Dray RPC events → normalized [`AgentEvent`](crate::events::AgentEvent)s.
+//! Lathe RPC events → normalized [`AgentEvent`](crate::events::AgentEvent)s.
 //!
-//! Dray keeps messages and extension payloads deliberately open-ended. This
+//! Lathe keeps messages and extension payloads deliberately open-ended. This
 //! mapper therefore uses the stable lifecycle/tool envelopes for structure and
 //! leaves extension arguments and results as JSON values for the UI.
 
@@ -26,7 +26,7 @@ use std::{
 };
 use uuid::Uuid;
 
-/// A Dray extension dialog waiting for a response from the host UI.
+/// A Lathe extension dialog waiting for a response from the host UI.
 #[derive(Debug, Clone)]
 pub struct PendingUiRequest {
     pub id: String,
@@ -34,11 +34,11 @@ pub struct PendingUiRequest {
     pub question: String,
 }
 
-/// Pending Dray extension dialogs shared by the stdout task and Tauri commands.
+/// Pending Lathe extension dialogs shared by the stdout task and Tauri commands.
 pub type PendingUiRequests = Arc<Mutex<HashMap<String, PendingUiRequest>>>;
 
 impl PendingUiRequest {
-    /// Converts a questionnaire answer into Dray's extension UI response shape.
+    /// Converts a questionnaire answer into Lathe's extension UI response shape.
     pub fn response(&self, answers: &HashMap<String, String>) -> Value {
         let Some(answer) = answers.get(&self.question) else {
             return json!({
@@ -73,7 +73,7 @@ impl PendingUiRequest {
     }
 }
 
-/// Stateful mapper for one Dray RPC child.
+/// Stateful mapper for one Lathe RPC child.
 pub struct Mapper {
     seq: Arc<AtomicU64>,
     session_id: String,
@@ -95,7 +95,7 @@ impl Default for Mapper {
 }
 
 impl Mapper {
-    /// Creates a mapper whose events are attributed to the Dray session.
+    /// Creates a mapper whose events are attributed to the Lathe session.
     pub fn new(session_id: impl Into<String>, cwd: impl Into<String>) -> Self {
         Self {
             seq: Arc::new(AtomicU64::new(0)),
@@ -122,7 +122,7 @@ impl Mapper {
         Self::with_seq_and_ui(session_id, cwd, seq, PendingUiRequests::default())
     }
 
-    /// Uses a shared request map so Dray extension dialogs can be answered by
+    /// Uses a shared request map so Lathe extension dialogs can be answered by
     /// Tauri commands while the mapper remains synchronous.
     pub fn with_seq_and_ui(
         session_id: impl Into<String>,
@@ -136,7 +136,7 @@ impl Mapper {
         mapper
     }
 
-    /// Maps one Dray record. A message can contain several content blocks, so a
+    /// Maps one Lathe record. A message can contain several content blocks, so a
     /// single wire line may produce several normalized events.
     pub fn map(&mut self, event: AgentRpcEvent) -> Result<Vec<AgentEvent>> {
         let payloads = match event {
@@ -285,7 +285,7 @@ impl Mapper {
                 error,
             } => vec![AgentEventPayload::Error {
                 source: ErrorSource::Harness,
-                message: format!("Dray extension {extension_path} ({event}): {error}"),
+                message: format!("Lathe extension {extension_path} ({event}): {error}"),
                 fatal: false,
             }],
             AgentRpcEvent::AutoRetryEnd {
@@ -294,7 +294,7 @@ impl Mapper {
                 ..
             } => vec![AgentEventPayload::Error {
                 source: ErrorSource::Harness,
-                message: final_error.unwrap_or_else(|| "Dray automatic retry failed.".into()),
+                message: final_error.unwrap_or_else(|| "Lathe automatic retry failed.".into()),
                 fatal: false,
             }],
             AgentRpcEvent::AgentEnd { .. }
@@ -472,7 +472,7 @@ impl Mapper {
 
         self.pending_ui
             .lock()
-            .expect("Dray UI request mutex poisoned")
+            .expect("Lathe UI request mutex poisoned")
             .insert(
                 id.clone(),
                 PendingUiRequest {
@@ -609,7 +609,7 @@ fn map_usage(wire: &AgentRpcUsage, model: Option<&str>) -> Usage {
     }
 }
 
-/// Maps Dray's `get_session_stats` response to the current conversation context.
+/// Maps Lathe's `get_session_stats` response to the current conversation context.
 /// This is separate from provider usage: `message_end.usage.totalTokens` is
 /// cumulative model billing, while `contextUsage.tokens` includes the actual
 /// messages currently retained in the context after tools and compaction.
@@ -714,7 +714,7 @@ fn strip_image_data(value: &mut Value) {
     }
 }
 
-/// Classifies Dray's built-in tools while leaving extension names generic.
+/// Classifies Lathe's built-in tools while leaving extension names generic.
 fn tool_type(name: &str) -> ToolType {
     match name {
         "bash" | "background_command" => ToolType::Shell,
@@ -879,13 +879,13 @@ mod tests {
     #[test]
     fn maps_extension_notifications_without_treating_them_as_errors() {
         let events = map_lines(&[
-            r#"{"type":"extension_ui_request","id":"notice-1","method":"notify","message":"Dray extension is ready","notifyType":"info"}"#,
+            r#"{"type":"extension_ui_request","id":"notice-1","method":"notify","message":"Lathe extension is ready","notifyType":"info"}"#,
         ]);
 
         assert!(matches!(
             &events[0].payload,
             AgentEventPayload::ExtensionNotification { message, level }
-                if message == "Dray extension is ready" && level == "info"
+                if message == "Lathe extension is ready" && level == "info"
         ));
     }
 

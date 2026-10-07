@@ -4,7 +4,7 @@ description: Use the GitHub CLI and Git to inspect repositories, pull requests, 
 ---
 # GitHub and Git workflows
 
-Use the `bash` tool to run `gh` and `git` in the current workspace. Dray does not provide the main agent with a dedicated GitHub API tool. Prefer the official `gh` CLI for GitHub-hosted information and `git` for local repository state and history.
+Use the `bash` tool to run `gh` and `git` in the current workspace. Lathe does not provide the main agent with a dedicated GitHub API tool. Prefer the official `gh` CLI for GitHub-hosted information and `git` for local repository state and history.
 
 ## Check the repository and authentication
 

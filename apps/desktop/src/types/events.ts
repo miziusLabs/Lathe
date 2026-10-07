@@ -12,7 +12,7 @@ export type AgentEvent = { id: string, sessionId: string, harness: Harness,
  * Position in the session's event log, and the cursor for reconnecting a UI
  * to a running session. One counter per session, shared by mapped stdout
  * lines and events the app synthesizes itself, seeded from the persisted log
- * on resume. Never sort by `ts` — most Dray events omit it.
+ * on resume. Never sort by `ts` — most Lathe events omit it.
  */
 seq: number, ts: string, turnId: string | null, payload: AgentEventPayload, 
 /**
@@ -66,7 +66,7 @@ baseline: string | null,
  */
 queued: boolean, 
 /**
- * The Dray session that relayed this prompt, when one did.
+ * The Lathe session that relayed this prompt, when one did.
  *
  * `None` — the ordinary case — means the user typed it. Carried as a
  * field rather than named in `text` because the transcript draws the
@@ -90,7 +90,7 @@ name: string, toolType: ToolType,
  */
 input: JsonValue, 
 /**
- * Input that isn't JSON at all — Dray's `custom_tool_call.input` is raw
+ * Input that isn't JSON at all — Lathe's `custom_tool_call.input` is raw
  * JS source.
  */
 rawInput: string | null, title: string | null, } | { "type": "tool_call_completed", callId: string, result: ToolResult, } | { "type": "file_edits", callId: string | null, edits: Array<FileEdit>, } | { "type": "usage_update" } & Usage | { "type": "rate_limited", 
@@ -166,7 +166,7 @@ preview: string | null, };
 
 /**
  * Joins streamed content to its committed counterpart. A message is often
- * `[text, tool_use, …]` and each block arrives as its own event; Dray's
+ * `[text, tool_use, …]` and each block arrives as its own event; Lathe's
  * committed events carry no index, so the mapper derives one by counting blocks
  * per `message_id` in arrival order.
  */
@@ -268,7 +268,7 @@ export type ContextWindow = { usedTokens: number, maxTokens: number, };
  *
  * **Deltas are a preview, never the source of truth**: the committed event for
  * the same [`BlockRef`] supersedes whatever they accumulated. Absent deltas are
- * the common case — Dray emits none — so
+ * the common case — Lathe emits none — so
  * consumers must render correctly without them.
  * Tagged on `delta`, not `type`: [`AgentEventPayload::Delta`] is a newtype
  * variant, so these fields flatten into the payload object alongside its own
@@ -360,7 +360,7 @@ export type MessageSender = { sessionId: string, title: string, };
 
 export type Model = { 
 /**
- * The harness-specific model family. Dray models carry their provider and
+ * The harness-specific model family. Lathe models carry their provider and
  * concrete id in [`agent_model`].
  */
 id: ModelId, agentModel: AgentModel | null, label: string, 
@@ -402,7 +402,7 @@ export type ModelUsage = {
 model: string, inputTokens: number | null, outputTokens: number | null, cachedInputTokens: number | null, cacheWriteTokens: number | null, webSearchRequests: number | null, costUsd: number | null, 
 /**
  * This model's context window. Also what the composer's gauge measures
- * against — see `context_window` in the Dray mapper.
+ * against — see `context_window` in the Lathe mapper.
  */
 contextWindow: number | null, maxOutputTokens: number | null, };
 
@@ -675,7 +675,7 @@ cloudName: string | null, title: string,
  */
 model: ModelId, 
 /**
- * The concrete provider/model selected when the harness is Dray.
+ * The concrete provider/model selected when the harness is Lathe.
  */
 agentModel: AgentModel | null, 
 /**
@@ -736,7 +736,7 @@ cloudName: string | null, title: string,
  */
 model: ModelId, 
 /**
- * The concrete provider/model selected when the harness is Dray.
+ * The concrete provider/model selected when the harness is Lathe.
  */
 agentModel: AgentModel | null, 
 /**
@@ -852,8 +852,8 @@ images: Array<ImageRef>, };
 export type ToolType = "shell" | "file_read" | "file_edit" | "search" | "web" | "mcp" | "other";
 
 /**
- * How a turn ended. Dray reports this as `is_error` on its result
- * event; Dray live emits `turn.completed` (a failed turn is uncaptured so
+ * How a turn ended. Lathe reports this as `is_error` on its result
+ * event; Lathe live emits `turn.completed` (a failed turn is uncaptured so
  * far). A user-abort outcome likely deserves its own variant once one has been
  * captured.
  */

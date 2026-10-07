@@ -9,8 +9,8 @@ import type { Harness, SlashCommand } from "@/types/events";
 /// keystroke after every switch.
 const cache = new Map<string, SlashCommand[]>();
 
-/// Dray skills available in `cwd`, empty until they land. Dray commands are not
-/// returned to the composer; Dray owns the slash-command surface.
+/// Lathe skills available in `cwd`, empty until they land. Lathe commands are not
+/// returned to the composer; Lathe owns the slash-command surface.
 ///
 /// A failed probe resolves to no commands rather than surfacing an error: the
 /// picker is an accelerator for text the user can always type by hand, so it

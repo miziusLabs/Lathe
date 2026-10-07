@@ -147,7 +147,7 @@ pub fn expand(prompt: &str, cwd: &Path) -> anyhow::Result<String> {
         .path
         .as_ref()
         .map(|path| path.display().to_string())
-        .unwrap_or_else(|| "the bundled Dray skill".into());
+        .unwrap_or_else(|| "the bundled Lathe skill".into());
     Ok(format!(
         "{}\n\nUse the skill from {}:\n{}",
         rest, source, skill.contents
