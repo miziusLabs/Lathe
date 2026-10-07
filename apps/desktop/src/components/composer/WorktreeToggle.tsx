@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useHotkey } from "@/hooks/useHotkey";
 import { cn } from "@/lib/utils";
 
 /// Create a separate checkout from the selected project and source branch.
@@ -14,6 +16,8 @@ export default function WorktreeToggle({
   disabled?: boolean;
   disabledReason?: string;
 }) {
+  useHotkey("t", onToggle, { shift: true, enabled: !disabled });
+
   const toggle = (
     <Button
       type="button"
@@ -45,19 +49,22 @@ export default function WorktreeToggle({
     </Button>
   );
 
-  if (!disabledReason) return toggle;
-
-  // Disabled buttons don't receive pointer events, so the wrapper is the
-  // tooltip trigger that keeps the reason hoverable.
+  // Disabled buttons don't receive pointer events, so a wrapper keeps their
+  // explanation hoverable. Enabled buttons remain the keyboard-focusable trigger.
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="inline-flex cursor-not-allowed">
-          {toggle}
-        </span>
+        {disabled ? (
+          <span className="inline-flex cursor-not-allowed">{toggle}</span>
+        ) : toggle}
       </TooltipTrigger>
       <TooltipContent side="top" className="h-8 max-w-none whitespace-nowrap">
-        {disabledReason}
+        {disabledReason ?? "Toggle Worktree"}
+        <KbdGroup>
+          <Kbd>⌘</Kbd>
+          <Kbd>⇧</Kbd>
+          <Kbd>T</Kbd>
+        </KbdGroup>
       </TooltipContent>
     </Tooltip>
   );
