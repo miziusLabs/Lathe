@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -84,7 +85,7 @@ export function filterEfforts(query: string, efforts: readonly Effort[]): Effort
   );
 }
 
-/// Next effort level for `model`, wrapping — what Shift+Tab lands on. `null`
+/// Next effort level for `model`, wrapping — what Cmd/Ctrl+Shift+E lands on. `null`
 /// where the model offers nothing to cycle, so the chord no-ops rather than
 /// inventing an effort the CLI would ignore.
 ///
@@ -169,8 +170,9 @@ export default function ModelSelector({
           </KbdGroup>
           <span className="text-muted-foreground">Effort</span>
           <KbdGroup>
+            <Kbd>{IS_MAC ? "⌘" : "Ctrl"}</Kbd>
             <Kbd>Shift</Kbd>
-            <Kbd>Tab</Kbd>
+            <Kbd>E</Kbd>
           </KbdGroup>
         </TooltipContent>
       </Tooltip>
@@ -197,6 +199,11 @@ export default function ModelSelector({
                 )}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
+                <KbdGroup className="px-2 py-1.5" aria-label="Cycle reasoning: Cmd/Ctrl+Shift+E">
+                  <Kbd>{IS_MAC ? "⌘" : "Ctrl"}</Kbd>
+                  <Kbd>Shift</Kbd>
+                  <Kbd>E</Kbd>
+                </KbdGroup>
                 {model.efforts.map((level) => (
                   <DropdownMenuItem
                     key={level}
@@ -207,6 +214,9 @@ export default function ModelSelector({
                     }}
                   >
                     {EFFORT_LABELS[level]}
+                    {selected && modelKey(model) === modelKey(selected) && selectedEffort === level && (
+                      <Check className="ml-auto size-4" aria-label="Selected" />
+                    )}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuSubContent>

@@ -319,9 +319,9 @@ function App() {
   // custom menu carries no Settings item to swallow the key first.
   useHotkey(",", () => setSettingsOpen(true));
   useHotkey("t", () => setAnalyticsOpen(true));
-  // No accelerator: Shift+Tab cycles the effort setting for the current model.
+  // Cmd/Ctrl+Shift+E cycles the effort setting for the current model.
   useHotkey(
-    "Tab",
+    "e",
     () => {
       const next = nextEffort(
         models.find(
@@ -335,7 +335,7 @@ function App() {
       );
       if (next) handleModelChange(modelId, next, agentModel);
     },
-    { meta: false, shift: true },
+    { shift: true },
   );
   // Ctrl+M cycles the configured model subset, leaving each model's own
   // remembered effort alone, same as picking it from the menu.

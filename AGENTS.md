@@ -291,7 +291,7 @@ The GitHub repository and updater endpoint still use `miziusLabs/Dray`.
 - `Cmd/Ctrl+N` — new session.
 - `Cmd/Ctrl+Shift+Up/Down` — move through sessions.
 - `Cmd/Ctrl+,` — Settings.
-- `Shift+Tab` — cycle effort/reasoning level for the current model.
+- `Cmd/Ctrl+Shift+E` — cycle effort/reasoning level for the current model.
 - `Cmd/Ctrl+M` — cycle the configured model subset.
 - `Alt+O` — attach files.
 
