@@ -1184,8 +1184,7 @@ mod tests {
         );
     }
 
-    /// A Worktree session records branch metadata for its prompt. The constructor
-    /// preserves the branch supplied by the session manager.
+    /// A Worktree session preserves the branch metadata supplied by the session manager.
     #[test]
     fn a_worktree_session_records_the_branch_its_work_lands_on() {
         let item = SessionIndexItem::new(

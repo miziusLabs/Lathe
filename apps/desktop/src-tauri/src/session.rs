@@ -60,9 +60,6 @@ use windows_sys::Win32::{
 /// point.
 pub const SESSION_CREATED: &str = "session_created";
 
-const WORKTREE_SESSION_PROMPT: &str =
-    "You are working in a local Git worktree on a dedicated branch. Work in the current checkout.";
-
 /// Resolves the home-relative form used by the No Project setting. PathBuf
 /// handles the native separator on both macOS and Windows; accepting both slash
 /// forms keeps a manually entered `~/...` path portable as well.
@@ -414,10 +411,6 @@ impl SessionManager {
                     (path, branch)
                 }
             };
-            let session_prompt = worktree_name
-                .is_some()
-                .then(|| format!("{WORKTREE_SESSION_PROMPT}\n\n{prompt}"));
-            let session_prompt = session_prompt.as_deref().unwrap_or(prompt);
             let recorded_project_path = project_path.unwrap_or("");
 
             let mut item = SessionIndexItem::new(
@@ -460,7 +453,7 @@ impl SessionManager {
             )
             .await?;
             session
-                .send_msg(session_prompt, attachment_paths, baseline, from, app)
+                .send_msg(prompt, attachment_paths, baseline, from, app)
                 .await?;
             let events = list_session_events(session_id).await?;
             self.sessions
