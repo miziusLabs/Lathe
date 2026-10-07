@@ -36,7 +36,7 @@ This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
 - File/image attachments, drag and drop, `@file` fuzzy search, `/commands`, and `$skills` discovered from `.agents/skills`.
 - Git handoff actions for commit, push, and pull-request workflows.
 - GitHub pull request markers and ready-to-merge notifications through `gh`.
-- Themes, native window integration, keyboard shortcuts, sounds, notices, and safe quit handling while work is active.
+- Fixed One Dark Pro appearance, native window integration, keyboard shortcuts, sounds, notices, and safe quit handling while work is active.
 
 ## Agent setup
 

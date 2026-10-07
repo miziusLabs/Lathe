@@ -40,7 +40,7 @@ This file is the implementation map for agents working in this repository. Keep 
 - GitHub pull request markers and ready-to-merge notifications through `gh`; detailed PR viewing and mutations are not exposed in the UI.
 - Sidebar PR markers and ready-to-merge notifications with polling/caching per repository.
 - Syntax-highlighted Markdown/code and worker-backed diff rendering.
-- Light/dark/system-aware theming helpers, code themes, macOS vibrancy/titlebar integration, and cross-platform hotkeys.
+- Fixed One Dark Pro appearance and syntax highlighting, macOS vibrancy/titlebar integration, and cross-platform hotkeys.
 - Safe quit flow that asks before exiting while sessions are active.
 
 ## Frontend entry points
@@ -137,7 +137,7 @@ Files in `src/hooks/`:
 - `useDraft.ts` — per-session unsent composer drafts.
 - `useNotices.ts` — in-app notice state.
 - `useDockBadge.ts` — dock/taskbar badge integration.
-- `useTheme.ts` and `useCodeTheme.ts` — app/code theme selection.
+- `useTheme.ts` and `useCodeTheme.ts` — fixed One Dark Pro/dark appearance and shared syntax theme; no preferences, OS mode tracking, or switching APIs.
 - `useHighlighter.ts` — shared syntax highlighter lifecycle.
 - `useVibrancy.ts` — native window vibrancy behavior.
 - `useFullscreen.ts` — native fullscreen state.

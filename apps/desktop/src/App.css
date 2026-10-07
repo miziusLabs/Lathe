@@ -11,101 +11,56 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Palettes are keyed on two independent attributes, `[data-theme]` × `[data-mode]`,
-   so N palettes cost 2N blocks here and nothing in the components. Only the dark
-   neutral palette exists today; a new one is a copy of this block with a new
-   `data-theme` value. `:root` carries the same values so an unstamped document
-   (theme script threw, or a stray reload) still renders legibly. */
-:root,
-[data-theme="neutral"][data-mode="dark"] {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  /* The composer card's own fill. Starts life as a copy of `--card` and exists
-     to be the one raised surface that stays a *fill* on glass: the handoff row
-     is parked behind it, so a veil there shows the buttons it is meant to hide.
-     Its own token rather than borrowing `--popover`, because the composer is
-     not a popover and the next change to floating surfaces should not have to
-     wonder whether the composer wanted it too. See the vibrancy block below. */
-  --composer: oklch(0.205 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+/* Fixed One Dark Pro palette, matching monorepo-labs/dray's dark UI port.
+   Keep the semantic tokens so every existing surface shares the same palette. */
+:root {
+  color-scheme: dark;
+  --background: #1e2227;
+  --foreground: #d7dae0;
+  --card: #323842;
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  /* Opaque because the handoff row is parked behind the composer. */
+  --composer: var(--card);
+  --primary: #d7dae0;
+  --primary-foreground: #1e2227;
+  --secondary: #3e4452;
+  --secondary-foreground: var(--foreground);
+  --muted: #3e4452;
+  --muted-foreground: #9da5b4;
+  --accent: var(--muted);
+  --accent-foreground: var(--foreground);
+  --destructive: #e06c75;
+  --border: #3e4452;
+  --input: #3e4452;
+  --ring: #4d78cc;
+  --chart-1: #61afef;
+  --chart-2: #98c379;
+  --chart-3: #e5c07b;
+  --chart-4: #c678dd;
+  --chart-5: #e06c75;
   --radius: 0.625rem;
-  /* Same as `--background`: the right-hand panel reads as part of the page,
-     not as a separate surface. The main sidebar uses `--composer` for its
-     raised surface. Kept as its own token so a future palette can diverge. */
-  --sidebar: oklch(0.145 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.922 0 0);
-  --sidebar-primary-foreground: oklch(0.205 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--muted);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
 
-  /* `--background` with the desktop let through, for the one surface that
-     reaches the window edge. The alpha is the whole of the vibrancy dial: the
-     material behind it already blurs and dims what it shows, so this is what
-     decides how much of the wallpaper survives. Everything stacked above it —
-     cards, menus, the composer — keeps its opaque fill, so the glass reads as
-     the room the app sits in rather than as a wash over the text. */
-  --background-vibrant: oklch(0.145 0 0 / 80%);
+  --background-vibrant: rgb(30 34 39 / 80%);
+  --surface-raised: #23272e;
+  --accent-thinking: #7f848e;
+  --accent-command: #e5c07b;
+  --accent-mention: #61afef;
 
-  /* Not part of the shadcn set. `--surface-raised` sits between `--background`
-     and `--card` for tool-call and code chrome that must read as inset rather
-     than as a floating card. */
-  --surface-raised: oklch(0.19 0 0);
-  --accent-thinking: oklch(0.62 0.04 264);
-  /* A slash command, wherever one is shown as text. Carries far more chroma
-     than `--accent-thinking` because it marks a word inside a run of ordinary
-     prose rather than tinting a whole row — at 0.04 it would read as grey
-     against the foreground beside it. Light for a yellow (0.82): the hue peaks
-     bright, so a darker one turns olive rather than reading as gold. */
-  --accent-command: oklch(0.82 0.13 90);
-  /* A file mention. Paired with `--accent-command` and deliberately far from it
-     in hue — the two can sit in one sentence (`/review @src/lib/slash.ts`), so
-     they have to be told apart at a glance rather than read as one run. Same
-     lightness and chroma, so neither outranks the other. */
-  --accent-mention: oklch(0.82 0.13 230);
-
-  /* The merge button, and nothing else. GitHub's own green rather than the
-     app's emerald: this is the one control that acts on GitHub, and matching
-     the colour it has there is most of what makes it recognisable as the same
-     button. The primary fill is a near-white, which on this palette read as the
-     brightest thing on the pane for its least reversible action. */
+  /* GitHub actions retain their recognizable green. */
   --accent-merge: oklch(0.546 0.139 149);
   --accent-merge-hover: oklch(0.617 0.152 149);
-  --accent-merge-foreground: oklch(0.985 0 0);
-  /* The seam in the split merge button, as a whole shadow rather than a colour
-     so the blur travels with it. Light, not dark: a dark line on a green fill
-     reads as a gap cut through the button, which is what a black-looking stroke
-     between the two halves was. The 1px blur softens it from a drawn rule into
-     an edge catching light, which is what GitHub's own divider reads as. */
+  --accent-merge-foreground: #d7dae0;
   --accent-merge-seam: inset 1px 0 1px oklch(1 0 0 / 10%);
-
-  /* Enough to lift a filled button off the surface and no more: on a dark
-     palette a filled button and its background are two flat fields, and without
-     this the only thing saying "button" is the fill itself. Straight down, no
-     spread — a shadow with an offset in x reads as a light source the rest of
-     the app doesn't have. */
   --shadow-button: 0 1px 4px oklch(0 0 0 / 45%);
 }
 
@@ -290,39 +245,12 @@
   html[data-vibrancy] body {
     background-color: var(--background-vibrant);
     --sidebar: transparent;
-    /* On glass a raised surface is a veil, not a fill — a flat opaque grey laid
-       over a live material reads as a hole punched in it. 5.5% white composites
-       to `--card`'s own `oklch(0.205 0 0)` when the page underneath is opaque,
-       so message bubbles, the composer card and attachment tiles look exactly
-       as they did and only stop being slabs. One thing does change: two of
-       these nested now stack, so a tile inside the composer card reads a step
-       lighter than the card instead of vanishing into it. */
-    --card: oklch(1 0 0 / 5.5%);
-    /* `--composer` is deliberately *not* given the same treatment, and this is
-       the one place that rule lives. It is the only raised surface with
-       something parked behind it — the handoff row — so a veil there would show
-       the buttons it exists to hide. It costs the composer its glass and buys
-       the one thing on that edge that has to be opaque. */
-    /* Same treatment for the one highlight that lands on the glass rather than
-       inside a menu: a selected session row is drawn as a light overlay on the
-       sidebar's composer surface, while the panel's active tab is drawn
-       straight onto the material. 11.5% white is `oklch(0.269 0 0)` over an
-       opaque page. The `/50` hover survives it: Tailwind compiles the modifier
-       to a `color-mix`, which multiplies the alpha rather than replacing it. */
-    --sidebar-accent: oklch(1 0 0 / 11.5%);
-    /* The rest of the scale, by the same arithmetic — 4% white is
-       `oklch(0.19 0 0)` over an opaque page and 11.5% is `oklch(0.269 0 0)`.
-       `--surface-raised` fills the tool-call argument and output boxes;
-       `--muted` fills keycaps, Streamdown's inline code, and every ghost
-       button's hover, so it was putting a slab under a word mid-sentence.
-
-       Opacity modifiers come through these unharmed: `a` of a veil over the
-       page composites to exactly `a` of the flat colour over the same page, so
-       `bg-muted/40` in the sidebar's shortcut hint is the colour it always was.
-       Only a surface with a different base underneath it — a keycap inside an
-       opaque tooltip — lands a shade lighter than before. */
-    --surface-raised: oklch(1 0 0 / 4%);
-    --muted: oklch(1 0 0 / 11.5%);
+    /* Keep One Dark Pro's tinted surfaces rather than the old neutral white
+       veils. The composer stays opaque to conceal the handoff row. */
+    --card: rgb(50 56 66 / 90%);
+    --sidebar-accent: rgb(62 68 82 / 90%);
+    --surface-raised: rgb(35 39 46 / 90%);
+    --muted: rgb(62 68 82 / 90%);
   }
 
   /* The app owns every scroll container, so the webview must never add its own. */

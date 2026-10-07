@@ -91,8 +91,8 @@ export function useHighlighter(lang: string, pair: CodeThemePair): boolean {
       return;
     }
 
-    // A pending state is reachable in normal use: switching theme, or a second
-    // view whose language differs from the one already loaded.
+    // A pending state is reachable when another view uses a language that
+    // has not been loaded yet.
     setReady(false);
 
     let cancelled = false;

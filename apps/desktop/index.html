@@ -1,30 +1,16 @@
 <!doctype html>
-<html lang="en" data-theme="neutral" data-mode="dark" class="dark">
+<html lang="en" data-theme="one-dark-pro" data-mode="dark" class="dark" style="color-scheme: dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lathe</title>
     <script>
-      // Runs before first paint so a stored theme never shows as a flash of the
-      // default one. Kept in sync with src/lib/theme.ts by hand — it can't import.
-      try {
-        var t = localStorage.getItem("ade.theme") || "neutral";
-        var m = localStorage.getItem("ade.mode") || "dark";
-        var dark =
-          m === "dark" ||
-          (m === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
-        var el = document.documentElement;
-        el.dataset.theme = t;
-        el.dataset.mode = dark ? "dark" : "light";
-        el.classList.toggle("dark", dark);
-        el.style.colorScheme = dark ? "dark" : "light";
-        // The window's material is macOS-only, so the translucency that reveals
-        // it is too — anywhere else it would punch a hole through to nothing.
-        // Set here rather than on mount because React lands a frame or two in,
-        // which is long enough to see the app open opaque and then turn to
-        // glass. `useVibrancy` clears it while fullscreen.
-        if (/Mac/.test(navigator.platform)) el.dataset.vibrancy = "";
-      } catch (e) {}
+      // Appearance is fixed in the markup, independent of stored/OS preferences.
+      // Reveal the macOS-only window material before React mounts.
+      // useVibrancy clears this while fullscreen.
+      if (/Mac/.test(navigator.platform)) {
+        document.documentElement.dataset.vibrancy = "";
+      }
     </script>
   </head>
 

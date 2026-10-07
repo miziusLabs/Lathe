@@ -1,6 +1,4 @@
-import { useEffect } from "react";
-import { areThemesEqual } from "@pierre/diffs";
-import { WorkerPoolContextProvider, useWorkerPool } from "@pierre/diffs/react";
+import { WorkerPoolContextProvider } from "@pierre/diffs/react";
 // Vite's `?worker` turns the package's worker entry into a constructor and
 // owns bundling it — the library takes a factory precisely because it can't
 // know the host's bundler.
@@ -33,23 +31,7 @@ export default function DiffWorkerPool({
       poolOptions={{ workerFactory: () => new DiffWorker(), poolSize: 2 }}
       highlighterOptions={{ langs: COMMON_LANGS, theme: pair }}
     >
-      <PoolThemeSync pair={pair} />
       {children}
     </WorkerPoolContextProvider>
   );
-}
-
-/// The pool's theme *overrides* per-view theme options (`getLocalHighlightTheme`
-/// prefers the manager's), and the singleton only reads `highlighterOptions` on
-/// first creation — so a theme change after mount has to be pushed to the pool
-/// or every diff keeps rendering in the old pair forever.
-function PoolThemeSync({ pair }: { pair: CodeThemePair }) {
-  const pool = useWorkerPool();
-
-  useEffect(() => {
-    if (!pool || areThemesEqual(pool.getDiffRenderOptions().theme, pair)) return;
-    void pool.setRenderOptions({ theme: pair });
-  }, [pool, pair]);
-
-  return null;
 }
