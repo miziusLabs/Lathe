@@ -10,7 +10,7 @@
   <img alt="Tauri" src="https://img.shields.io/badge/Tauri-2-24C8DB?style=flat-square&logo=tauri&logoColor=white">
   <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white">
   <img alt="Vite" src="https://img.shields.io/badge/Vite-7-646CFF?style=flat-square&logo=vite&logoColor=white">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.8.4-blue?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-0.8.5-blue?style=flat-square">
   <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-6B4EFF?style=flat-square">
 </p>
 
