@@ -208,7 +208,7 @@ The frontend-facing Tauri command surface covers session send/read/control, atta
 ## Worktree Sessions
 
 Worktree mode requires a Git project and source branch. `worktrees.rs` creates
-`<repo>/.lathe/worktrees/<uuid>` on `lathe/<uuid>`, fetches the source remote,
+`<repo>/.lathe/worktrees/<uuid>` with detached HEAD (no new branch), fetches the source remote,
 and pulls with `--ff-only` in the new checkout. Failed updates cancel creation;
 the source checkout is never switched or merged. Nested worktrees are ignored
 through the shared Git info/exclude. Agent context stays in the normal app store.

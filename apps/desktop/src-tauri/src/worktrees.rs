@@ -30,7 +30,7 @@ pub fn path(project: &str, name: &str) -> String {
         .into_owned()
 }
 
-/// Fetch first, then fast-forward the new branch from its source's upstream.
+/// Fetch first, then fast-forward a detached checkout from its source's upstream.
 /// A failed pull never changes the source checkout or leaves a partial workspace.
 pub async fn create(project: &str, name: &str, base: Option<&str>) -> Result<(String, String)> {
     uuid::Uuid::parse_str(name).context("invalid worktree ID")?;
@@ -88,7 +88,6 @@ pub async fn create(project: &str, name: &str, base: Option<&str>) -> Result<(St
     git(project, &["fetch", "--prune", "--", &remote]).await?;
 
     let cwd = path(&root, name);
-    let branch = format!("lathe/{name}");
     // Ignore nested checkouts for all worktrees without modifying tracked project files.
     let common = git(project, &["rev-parse", "--git-common-dir"]).await?;
     let common = PathBuf::from(common);
@@ -114,9 +113,7 @@ pub async fn create(project: &str, name: &str, base: Option<&str>) -> Result<(St
         &[
             "worktree",
             "add",
-            "--no-track",
-            "-b",
-            &branch,
+            "--detach",
             &cwd,
             &source,
         ],
@@ -129,23 +126,12 @@ pub async fn create(project: &str, name: &str, base: Option<&str>) -> Result<(St
     .await
     {
         let _ = git(project, &["worktree", "remove", &cwd]).await;
-        let _ = git(project, &["branch", "-D", &branch]).await;
         return Err(
             error.context("Could not update the Worktree from its remote; creation was cancelled.")
         );
     }
-    // Remember the source for forks without making the new branch track (or push to) it.
-    git(
-        project,
-        &["config", &format!("branch.{branch}.latheRemote"), &remote],
-    )
-    .await?;
-    git(
-        project,
-        &["config", &format!("branch.{branch}.latheMerge"), &merge],
-    )
-    .await?;
-    Ok((cwd, branch))
+    // Retain the source branch as session metadata for subsequent worktree forks.
+    Ok((cwd, base))
 }
 
 /// Never force removal: uncommitted work must survive session deletion.
@@ -265,11 +251,15 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(cwd, path(source.to_str().unwrap(), &id));
+        assert_eq!(branch, "main");
+        assert!(git(Path::new(&cwd), &["symbolic-ref", "--short", "HEAD"])
+            .await
+            .is_err());
         assert_eq!(
-            git(Path::new(&cwd), &["symbolic-ref", "--short", "HEAD"])
+            git(&source, &["for-each-ref", "--format=%(refname)", "refs/heads"])
                 .await
                 .unwrap(),
-            branch
+            "refs/heads/main"
         );
         assert_eq!(
             tokio::fs::read_to_string(Path::new(&cwd).join("file.txt"))
