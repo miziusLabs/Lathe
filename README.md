@@ -28,7 +28,7 @@ This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
 
 - Persistent multi-session workspace with search, pinning, settling, forks, nested sessions, unread/waiting state, and desktop notifications.
 - Local Sessions inside attached projects, with project and Git branch switching.
-- Isolated Cloud Sessions that run Lathe's agent in Docker with their own persistent workspace volume.
+- Worktree Sessions that run in separate Git checkouts under the project’s `.lathe/worktrees` directory.
 - ChatGPT sign-in, account-specific model and effort controls, context usage, queued follow-ups, and generated session titles.
 - Native file editing, search, shell and background commands, questions, codebase/GitHub research, and web search.
 - Automatic OpenAI prompt caching with recorded token and cache-hit indicators.
@@ -99,27 +99,16 @@ cd apps/desktop && pnpm tauri build
 cd apps/desktop/src-tauri && cargo test
 ```
 
-## Cloud sandbox
+## Worktree Sessions
 
-Cloud Sessions run the standalone Lathe agent in Docker without mounting or
-cloning the selected project. The image includes Java 21, Java 25, Node.js 24,
-GitHub CLI, Git, and Lathe. Host `~/.mizius/skills` is mounted read-only. Each
-workspace has its own persistent history. Short-lived OpenAI access tokens
-travel through stdin; credentials remain on the host. GitHub authentication
-uses `GITHUB_TOKEN` or an authenticated host `gh`.
-Build the image locally (Docker Desktop must be running):
-
-```sh
-pnpm build:sandbox
-```
-
-The build runs from the host on Windows, macOS, and Linux. On Windows it uses
-the same Docker daemon (Docker Desktop's WSL 2 backend) that Cloud Sessions
-run on, so no separate WSL setup is needed — the image is built where it will
-be used.
-
-Use `DRAY_CLOUD_IMAGE` to select a different image tag and `GITHUB_TOKEN` (or a
-logged-in `gh`) to provide the token passed to Cloud containers.
+Select a Git project and source branch, then enable Worktree to start a session
+in `<repo>/.lathe/worktrees/<id>` on its own `lathe/<id>` branch. Creation fetches
+the remote and pulls with `--ff-only` inside the new checkout, leaving the
+project checkout unchanged. A remote and a successful pull are required.
+Worktree sessions use your local tools, file search, and Git actions.
+Dirty worktrees and checkouts still used by another session survive deletion.
+Legacy Cloud transcripts remain readable; start a new Worktree session to
+continue locally. Existing Docker volumes are left intact.
 
 ## Releasing the app
 

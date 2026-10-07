@@ -5,7 +5,7 @@ import BranchSwitchDialog from "@/components/composer/BranchSwitchDialog";
 import ContextMeter from "@/components/composer/ContextMeter";
 import ModelSelector from "@/components/composer/ModelSelector";
 import ProjectSelector from "@/components/composer/ProjectSelector";
-import CloudToggle from "@/components/composer/CloudToggle";
+import WorktreeToggle from "@/components/composer/WorktreeToggle";
 import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -42,10 +42,10 @@ export type ComposerToolbarProps = {
   onConfirmBranchSwitch: (stash: boolean) => void;
   onCancelBranchSwitch: () => void;
 
-  useCloud: boolean;
-  cloudAvailable: boolean;
-  cloudUnavailableReason: string;
-  onToggleCloud: () => void;
+  useWorktree: boolean;
+  worktreeAvailable: boolean;
+  worktreeUnavailableReason: string;
+  onToggleWorktree: () => void;
 
   /// Opens the file picker. The attachments themselves are held in a
   /// module-level store keyed by session, not passed through here — this row is
@@ -62,7 +62,7 @@ export type ComposerToolbarProps = {
   isNewSession: boolean;
 };
 
-/// The composer's control row. Project, branch, and cloud decide where a session
+/// The composer's control row. Project, branch, and worktree decide where a session
 /// starts and disappear once it has — a control that can never be used is noise,
 /// and the session header already shows the project and branch. Its own spacing
 /// from the card is the caller's, since only the caller knows which side of it
@@ -86,10 +86,10 @@ export default function ComposerToolbar({
   pendingBranch,
   onConfirmBranchSwitch,
   onCancelBranchSwitch,
-  useCloud,
-  cloudAvailable,
-  cloudUnavailableReason,
-  onToggleCloud,
+  useWorktree,
+  worktreeAvailable,
+  worktreeUnavailableReason,
+  onToggleWorktree,
   onAttach,
   contextUsage,
   isNewSession,
@@ -131,33 +131,24 @@ export default function ComposerToolbar({
 
       {isNewSession && (
         <>
-          {!useCloud && (
-            <ProjectSelector
-              projects={projects}
-              value={projectPath}
-              onSelect={onSelectProject}
-              onAttach={onAttachProject}
-              onRename={onRenameProject}
-              onDelete={onDeleteProject}
-              onReorder={onReorderProjects}
-            />
-          )}
-
-          {/* When Docker is available, Cloud can be selected even before a local
-              project is selected. A project, when selected, supplies branch
-              metadata only; it is never mounted into the Docker sandbox. Both
-              pickers hide in Cloud for
-              the same reason: the controls that decide where a session runs
-              vanish once the mode is set, and the branch the Cloud starts from
-              is the selected project's own. */}
-          <CloudToggle
-            on={useCloud}
-            onToggle={onToggleCloud}
-            disabled={!cloudAvailable}
-            disabledReason={!cloudAvailable ? cloudUnavailableReason : undefined}
+          <ProjectSelector
+            projects={projects}
+            value={projectPath}
+            onSelect={onSelectProject}
+            onAttach={onAttachProject}
+            onRename={onRenameProject}
+            onDelete={onDeleteProject}
+            onReorder={onReorderProjects}
           />
 
-          {projectPath && !useCloud && (
+          <WorktreeToggle
+            on={useWorktree}
+            onToggle={onToggleWorktree}
+            disabled={!worktreeAvailable}
+            disabledReason={!worktreeAvailable ? worktreeUnavailableReason : undefined}
+          />
+
+          {projectPath && (
             <div className="relative flex min-w-0 items-center">
               <BranchSelector
                 key="branch-selector"

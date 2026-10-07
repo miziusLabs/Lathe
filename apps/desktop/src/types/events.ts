@@ -656,17 +656,20 @@ queued: QueuedMessage | null, };
 export type SessionIndexItem = { sessionId: string, harness: Harness, 
 /**
  * Where the agent actually runs. Equals `project_path` for a normal
- * session; points inside `~/.dray/cloud/<id>` for a Cloud one.
+ * session; points inside `<project>/.lathe/worktrees/<id>` for a Worktree one.
  */
 cwd: string, 
 /**
- * Project metadata used for sidebar grouping; empty for No Project. A
- * Cloud does not mount or clone this project.
+ * Project metadata used for sidebar grouping; empty for No Project.
+ * Worktree sessions share this repository through a separate checkout.
  */
 projectPath: string, branch: string | null, 
 /**
- * `Some` marks this a Cloud session. Cloud sessions use a private Docker
- * volume identified by this name; the host project is never mounted.
+ * Identifies a managed local Git worktree.
+ */
+worktreeName: string | null, 
+/**
+ * Legacy Docker workspace. Kept for existing session data.
  */
 cloudName: string | null, title: string, 
 /**
@@ -717,17 +720,20 @@ export type SessionInfo = { cwd: string | null, model: string | null, harnessVer
 export type SessionSnapshot = { events: Array<AgentEvent>, sessionId: string, harness: Harness, 
 /**
  * Where the agent actually runs. Equals `project_path` for a normal
- * session; points inside `~/.dray/cloud/<id>` for a Cloud one.
+ * session; points inside `<project>/.lathe/worktrees/<id>` for a Worktree one.
  */
 cwd: string, 
 /**
- * Project metadata used for sidebar grouping; empty for No Project. A
- * Cloud does not mount or clone this project.
+ * Project metadata used for sidebar grouping; empty for No Project.
+ * Worktree sessions share this repository through a separate checkout.
  */
 projectPath: string, branch: string | null, 
 /**
- * `Some` marks this a Cloud session. Cloud sessions use a private Docker
- * volume identified by this name; the host project is never mounted.
+ * Identifies a managed local Git worktree.
+ */
+worktreeName: string | null, 
+/**
+ * Legacy Docker workspace. Kept for existing session data.
  */
 cloudName: string | null, title: string, 
 /**

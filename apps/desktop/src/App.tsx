@@ -75,9 +75,9 @@ function App() {
     projectPath,
     branches,
     branch,
-    useCloud,
-    cloudAvailable,
-    cloudUnavailableReason,
+    useWorktree,
+    worktreeAvailable,
+    worktreeUnavailableReason,
     busy,
     compacting,
     working,
@@ -94,7 +94,7 @@ function App() {
     pendingBranch,
     setPendingBranch,
     runCheckout,
-    setUseCloud,
+    setUseWorktree,
     handleSendMsg,
     handleInterrupt,
     queuedMessages,
@@ -198,7 +198,7 @@ function App() {
         : [
             ...new Set(
               visibleSessions
-                .filter((item) => !item.cloudName && item.projectPath)
+                .filter((item) => item.projectPath)
                 .map((item) => item.projectPath),
             ),
           ],
@@ -209,7 +209,7 @@ function App() {
   // Ready-to-merge notices and branch marks remain available in the sidebar.
   usePrReady({ sessions: visibleSessions, prFor: prMarks.prFor });
 
-  const prBranch = selectedSession?.cloudName || !selectedSession?.projectPath
+  const prBranch = !selectedSession?.projectPath
     ? null
     : sessionBranch(selectedSession, workStatus?.branch);
   const markHere = selectedSession?.projectPath
@@ -218,10 +218,10 @@ function App() {
 
   // An open session's own directory, since project- and local-scoped commands
   // differ per repo and a session can be running somewhere the picker isn't
-  // pointed — a cloud, or a project switched away from since. The `@` picker
+  // pointed — a worktree, or a project switched away from since. The `@` picker
   // resolves against the same directory for the same reason, and off the same
   // expression so the two can't answer for different trees.
-  const composerCwd = selectedSession?.cwd ?? projectPath ?? (useCloud ? "." : null);
+  const composerCwd = selectedSession?.cwd ?? projectPath;
   const slashSkills = useSlashCommands(composerCwd, harness);
 
   const settleCurrentSession = async () => {
@@ -475,10 +475,10 @@ function App() {
                 pendingBranch && runCheckout(pendingBranch, stash)
               }
               onCancelBranchSwitch={() => setPendingBranch(null)}
-              useCloud={useCloud}
-              cloudAvailable={cloudAvailable}
-              cloudUnavailableReason={cloudUnavailableReason}
-              onToggleCloud={() => setUseCloud((v) => !v)}
+              useWorktree={useWorktree}
+              worktreeAvailable={worktreeAvailable}
+              worktreeUnavailableReason={worktreeUnavailableReason}
+              onToggleWorktree={() => setUseWorktree((v) => !v)}
               onAttach={() => void pickAttachments(selectedSessionId)}
               contextUsage={contextUsage}
               isNewSession={!selectedSessionId}

@@ -14,8 +14,7 @@
     "app": "node scripts/tauri.mjs dev",
     "app:no-watch": "node scripts/tauri.mjs dev --no-watch",
     "install:app": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/install.ps1",
-    "icons": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/icons.ps1",
-    "build:sandbox": "node scripts/build-sandbox.mjs"
+    "icons": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/icons.ps1"
   },
   "dependencies": {
     "@blobatar/react": "^2.5.0",

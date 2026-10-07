@@ -44,31 +44,24 @@ pub async fn delete_session_data(session_id: &str) -> Result<()> {
 }
 /// Starts one persistent Lathe RPC child for a Lathe session.
 ///
-/// Local Lathe sessions use a stable Lathe-owned directory. Cloud sessions use a
-/// private Docker volume with host skills mounted read-only.
+/// All sessions run locally and keep agent history in a stable Lathe-owned directory.
 pub async fn init(
     session_id: &str,
     model: &Model,
     effort: Option<Effort>,
     cwd: &str,
     session_cwd: &str,
-    cloud_name: Option<&str>,
     is_new_session: bool,
     fork_from: Option<&str>,
     app: &AppHandle,
 ) -> Result<Session> {
-    let cloud = cloud_name.is_some();
-    let session_dir = if cloud {
-        "/home/agent/.dray/agent-sessions".to_string()
-    } else {
-        let app_dir = store::get_home_app_dir().await?;
-        let session_dir = app_dir.join("agent-sessions");
-        tokio::fs::create_dir_all(&session_dir).await?;
-        session_dir
-            .to_str()
-            .context("Lathe session directory is not valid UTF-8")?
-            .to_string()
-    };
+    let app_dir = store::get_home_app_dir().await?;
+    let session_dir = app_dir.join("agent-sessions");
+    tokio::fs::create_dir_all(&session_dir).await?;
+    let session_dir = session_dir
+        .to_str()
+        .context("Invalid session directory")?
+        .to_string();
     let mut args = vec![
         "--mode".to_string(),
         "rpc".to_string(),
@@ -102,25 +95,11 @@ pub async fn init(
         args.extend(["--session-id".to_string(), session_id.to_string()]);
     }
 
-    let mut command = if let Some(name) = cloud_name {
-        crate::sandbox::agent_command(session_id, name, &args).await?
-    } else {
-        let mut command = crate::binpath::agent_command().await;
-        command.args(&args);
-        command
-    };
-
-    // The Docker command's host working directory is unrelated to the
-    // container. Cloud sessions must start in the persistent workspace inside
-    // the container, which is set by sandbox::agent_command; do not apply the
-    // host-side marker directory here.
-    if !cloud {
-        command.current_dir(cwd);
-    }
-    let child = command.stdin(Stdio::piped());
-    if !cloud {
-        child.env("PATH", crate::binpath::agent_path());
-    }
+    let mut command = crate::binpath::agent_command().await;
+    command.args(&args).current_dir(cwd);
+    let child = command
+        .stdin(Stdio::piped())
+        .env("PATH", crate::binpath::agent_path());
     let mut child = child
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -234,7 +213,6 @@ pub async fn init(
         child,
         stdin,
         harness: Dray,
-        cloud,
         cwd: session_cwd.to_string(),
         model: model.id,
         agent_model: model.agent_model.clone(),
@@ -287,7 +265,13 @@ async fn read_stdout(
         };
 
         if matches!(runtime_event, AgentRpcEvent::Unrecognized) {
-            record_failure(session_id, "unknown_subtype", "unmodeled Lathe event", &line).await;
+            record_failure(
+                session_id,
+                "unknown_subtype",
+                "unmodeled Lathe event",
+                &line,
+            )
+            .await;
         }
 
         let is_session = matches!(&runtime_event, AgentRpcEvent::Session { .. });

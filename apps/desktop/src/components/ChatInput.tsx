@@ -74,8 +74,7 @@ type ChatInputProps = {
   onModelChange: (modelId: Model["id"], effort: Effort | null, agentModel: Model["agentModel"]) => void;
   onNewSession: () => void;
   onSettle: () => void | Promise<void>;
-  /// Where the `@` picker searches for files. Cloud sessions expose an empty
-  /// host-side marker because their actual workspace stays inside Docker.
+  /// Where the `@` picker searches for files: the session’s actual checkout.
   cwd?: string | null;
   /// The project associated with this composer. Prompt stashes are scoped to
   /// this path; legacy stashes without a project are intentionally not migrated.

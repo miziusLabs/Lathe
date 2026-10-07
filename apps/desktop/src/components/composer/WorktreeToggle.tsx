@@ -2,9 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-/// Off, the branch picker to the right decides where the session runs. On, it is
-/// replaced by the fork point, which the CLI picks rather than the user.
-export default function CloudToggle({
+/// Create a separate checkout from the selected project and source branch.
+export default function WorktreeToggle({
   on,
   onToggle,
   disabled,
@@ -42,7 +41,7 @@ export default function CloudToggle({
           )}
         />
       </span>
-      Cloud
+      Worktree
     </Button>
   );
 

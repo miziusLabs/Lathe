@@ -139,28 +139,19 @@ Icons for `pr`/`draftPr` = same pair sidebar row and panel toggle draw, so mark 
 
 Hover delay symmetric (150ms): keep cursor merely passing through from popping row open, and let one overshooting on way out come back without it having closed.
 
-## Cloud sandbox
+## Worktree sessions
 
-Cloud is the only isolated-session mode. A Cloud Session starts the native Lathe agent through
-Docker with a private named volume and an empty `/home/agent/workspace`. The
-selected project is retained only as grouping and branch metadata; it is never
-cloned, mounted, or used as the container's working tree.
+Worktree mode creates a separate local checkout under `<repo>/.lathe/worktrees`
+on a dedicated branch. The project and source branch remain selectable. Creation
+fetches and fast-forwards from the source remote inside the new checkout; failed
+updates cancel creation. The primary checkout remains untouched. File mentions,
+Git snapshots, and handoff actions use the session's checkout. Worktree sessions
+stay grouped with their source project. Dirty or shared checkouts survive deletion.
 
-The image is built by `scripts/build-sandbox.ps1` and includes Java 21, Java 25,
-Node.js 24, Git, GitHub CLI, and Lathe. The host `~/.mizius/skills` directory is a
-read-only mount for standard SKILL.md files. Agent history remains private to
-the volume. The desktop delivers short-lived OpenAI access tokens through stdin;
-OAuth credentials stay on the host.
-
-GitHub authentication follows Agentsmith. The host resolves `GITHUB_TOKEN`,
-`GH_TOKEN`, or the local `gh auth token`; only the environment variable name is
-passed to Docker. The entrypoint exports `GH_TOKEN`, runs `gh auth setup-git`,
-and rewrites SSH GitHub URLs to HTTPS. The token is never written to the agent
-seed or the Cloud volume.
 
 ## Settings dialog
 
-**Dialog, not alert, and `showClose` = whole difference.** Frame, overlay and both animation copied from `alert-dialog` deliberately: to reader two are same object, differing only in whether app asking question or reader opened something. Alert answered by own buttons so carry no dismiss; dialog dismissed rather than answered, and Escape alone = way out only for people who already know it there. `--popover` not `--card` for [the vibrancy reason above](#cloud-sandbox).
+**Dialog, not alert, and `showClose` = whole difference.** Frame, overlay and both animation copied from `alert-dialog` deliberately: to reader two are same object, differing only in whether app asking question or reader opened something. Alert answered by own buttons so carry no dismiss; dialog dismissed rather than answered, and Escape alone = way out only for people who already know it there. `--popover` not `--card` for [the vibrancy reason above](#worktree-sessions).
 
 **Gear in sidebar's titlebar strip, and it move in fullscreen.** Strip `justify-end` normally to clear traffic lights, `justify-start` in fullscreen where they gone. Settings sit in that strip rather than filter row below, because every control in that row scope list under it and these app-wide.
 

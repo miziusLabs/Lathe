@@ -2,10 +2,8 @@ import type { PrMark } from "@/types/events";
 
 /// The branch a session's work lands on, for the PR lookup and the header.
 ///
-/// `observed` is what Git says HEAD is for a local session. Cloud sessions have
-/// no checkout, so their recorded branch is used directly. A null `observed`
-/// is also the normal pending/non-repository answer, and the recorded value
-/// keeps the header stable while a local read lands.
+/// `observed` is the current checkout branch, including worktrees. The recorded
+/// branch keeps the header stable while that Git read is pending.
 ///
 /// One function because the header and the PR lookup have to agree about which
 /// branch the session is on; two rebuilding it apart is how they come to
@@ -13,7 +11,7 @@ import type { PrMark } from "@/types/events";
 export function sessionBranch(
   session: {
     branch: string | null;
-    cloudName?: string | null;
+    worktreeName?: string | null;
   },
   observed?: string | null,
 ): string | null {

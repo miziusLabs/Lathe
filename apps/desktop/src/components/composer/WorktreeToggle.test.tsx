@@ -1,18 +1,18 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import CloudToggle from "@/components/composer/CloudToggle";
+import WorktreeToggle from "@/components/composer/WorktreeToggle";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-describe("CloudToggle", () => {
-  it("is disabled when Docker is unavailable", () => {
+describe("WorktreeToggle", () => {
+  it("is disabled when no Git project is selected", () => {
     const html = renderToStaticMarkup(
       <TooltipProvider>
-        <CloudToggle
+        <WorktreeToggle
           on={false}
           onToggle={vi.fn()}
           disabled
-          disabledReason="Docker is not installed or is not running."
+          disabledReason="Select a Git project to create a Worktree."
         />
       </TooltipProvider>,
     );
@@ -23,8 +23,8 @@ describe("CloudToggle", () => {
     expect(html).toContain('data-slot="tooltip-trigger"');
   });
 
-  it("remains interactive when Docker is available", () => {
-    const html = renderToStaticMarkup(<CloudToggle on onToggle={vi.fn()} />);
+  it("remains interactive when a Git project is selected", () => {
+    const html = renderToStaticMarkup(<WorktreeToggle on onToggle={vi.fn()} />);
 
     expect(html).toContain('role="switch"');
     expect(html).toContain('aria-checked="true"');

@@ -1,7 +1,11 @@
 // Tauri embeds Common Controls 6 in binaries, while the library test harness
 // also needs that manifest for the Windows dialog imports to load correctly.
 #[cfg(all(test, windows, target_env = "gnu"))]
-#[link(name = "libresource.a", kind = "static", modifiers = "+verbatim,-bundle")]
+#[link(
+    name = "libresource.a",
+    kind = "static",
+    modifiers = "+verbatim,-bundle"
+)]
 extern "C" {}
 
 use crate::{
@@ -30,15 +34,15 @@ pub mod harness;
 #[path = "models/models.rs"]
 pub mod models;
 pub mod notifications;
-pub mod projects;
 pub mod profile;
+pub mod projects;
 pub mod quit;
-pub mod sandbox;
 pub mod session;
 pub mod store;
 pub mod title;
-pub mod usage;
 pub(crate) mod tls;
+pub mod usage;
+pub mod worktrees;
 
 #[tauri::command]
 async fn get_plan_usage() -> Result<usage::PlanUsage, String> {
@@ -52,7 +56,9 @@ fn get_account_status() -> Result<account::AccountStatus, String> {
 
 #[tauri::command]
 async fn get_local_profile_picture() -> Result<Option<String>, String> {
-    profile::picture_path().await.map_err(|error| error.to_string())
+    profile::picture_path()
+        .await
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -85,11 +91,6 @@ async fn sign_out_chatgpt(
 }
 
 #[tauri::command]
-async fn cloud_availability() -> sandbox::CloudAvailability {
-    sandbox::availability().await
-}
-
-#[tauri::command]
 async fn send_msg(
     session_id: &str,
     prompt: &str,
@@ -103,8 +104,8 @@ async fn send_msg(
     cwd: &str,
     project_path: Option<&str>,
     branch: Option<&str>,
-    use_cloud: bool,
-    cloud_name: Option<&str>,
+    use_worktree: bool,
+    worktree_name: Option<&str>,
     is_new_session: bool,
     queue_after_turn: bool,
     app: AppHandle,
@@ -129,10 +130,10 @@ async fn send_msg(
             cwd,
             project_path,
             branch,
-            use_cloud,
-            cloud_name,
+            use_worktree,
+            worktree_name,
             // The composer has no explicit base ref; its selected branch is
-            // recorded and used as the cloud's starting point.
+            // recorded and used as the worktree's starting point.
             None,
             is_new_session,
             queue_after_turn,
@@ -420,7 +421,7 @@ async fn delete_session(
 }
 
 /// Copies a session onto `fork_id`, to be carried on separately from the one it
-/// came from. `cloud` gives the fork a tree of its own rather than leaving it
+/// came from. `worktree` gives the fork a tree of its own rather than leaving it
 /// in the parent's directory.
 ///
 /// The id comes from the caller for the same reason a new session's does: this
@@ -433,11 +434,11 @@ async fn delete_session(
 async fn fork_session(
     session_id: &str,
     fork_id: &str,
-    cloud: bool,
+    worktree: bool,
     manager: State<'_, SessionManager>,
 ) -> Result<SessionSnapshot, String> {
     manager
-        .fork(session_id, fork_id, cloud)
+        .fork(session_id, fork_id, worktree)
         .await
         .map_err(|e| e.to_string())
 }
@@ -542,7 +543,6 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            cloud_availability,
             get_plan_usage,
             get_account_status,
             get_local_profile_picture,

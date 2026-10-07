@@ -4,11 +4,10 @@ use crate::{
     git,
     harness::{dray, Harness::Dray},
     models::{resolve_effort, AgentModel, Effort, Model, ModelId},
-    sandbox,
     store::{
-        append_session_event, append_session_index_item, clear_fork_from, cloud_path,
-        copy_session_log, delete_session, get_session_index_item, list_session_events,
-        resolve_unclaimed_cloud_name, set_session_status, touch_session_index_item,
+        append_session_event, append_session_index_item, clear_fork_from, copy_session_log,
+        delete_session, get_session_index_item, list_session_events,
+        resolve_unclaimed_worktree_name, set_session_status, touch_session_index_item,
         SessionIndexItem, SessionSnapshot, SessionStatus,
     },
 };
@@ -61,8 +60,8 @@ use windows_sys::Win32::{
 /// point.
 pub const SESSION_CREATED: &str = "session_created";
 
-const CLOUD_SESSION_PROMPT: &str =
-    "You are working inside a Cloud environment. Clone repositories if needed.";
+const WORKTREE_SESSION_PROMPT: &str =
+    "You are working in a local Git worktree on a dedicated branch. Work in the current checkout.";
 
 /// Resolves the home-relative form used by the No Project setting. PathBuf
 /// handles the native separator on both macOS and Windows; accepting both slash
@@ -249,18 +248,23 @@ impl StatusTracker {
     }
 }
 
-/// Removes the Docker volume and empty host-side marker for a Cloud session.
-///
-/// This is best-effort on the delete path: the session row and transcript are
-/// more important than reclaiming a Docker volume, and Docker may already have
-/// removed a volume after an interrupted container.
-async fn remove_session_cloud(item: &SessionIndexItem) {
-    let Some(name) = item.cloud_name.as_deref() else {
+/// Preserve dirty checkouts and checkouts still referenced by another session.
+async fn remove_session_worktree(item: &SessionIndexItem) {
+    if item.worktree_name.is_none() {
+        return;
+    }
+    let Ok(items) = crate::store::list_session_index_items().await else {
         return;
     };
-
-    sandbox::remove_volume(name).await;
-    let _ = tokio::fs::remove_dir_all(cloud_path(name)).await;
+    if items
+        .iter()
+        .any(|other| other.session_id != item.session_id && other.cwd == item.cwd)
+    {
+        return;
+    }
+    if let Err(error) = crate::worktrees::remove(&item.cwd).await {
+        eprintln!("Preserving worktree {}: {error}", item.cwd);
+    }
 }
 
 /// Persists a status change and tells the frontend. Failures are logged, not
@@ -347,13 +351,11 @@ impl SessionManager {
         // The attached project used for sidebar/Git metadata. `None` means the
         // built-in No Project choice and is kept out of project grouping.
         project_path: Option<&str>,
-        // Recorded, not acted on for Cloud sessions. The branch picker supplies
-        // metadata and never changes the host checkout when Cloud is enabled.
+        // Source branch for a new worktree; the project checkout stays untouched.
         branch: Option<&str>,
-        use_cloud: bool,
-        cloud_name: Option<&str>,
-        // Branch metadata for the new Cloud's brief, resolved before calling
-        // here; Cloud itself does not resolve or validate Git refs.
+        use_worktree: bool,
+        worktree_name: Option<&str>,
+        // Optional source ref supplied by non-composer callers.
         base_ref: Option<&str>,
         is_new_session: bool,
         queue_after_turn: bool,
@@ -387,57 +389,43 @@ impl SessionManager {
         let effort = resolve_effort(&model_spec, effort);
 
         if is_new_session {
-            let local_cwd = if use_cloud || project_path.is_some() {
+            let local_cwd = if use_worktree || project_path.is_some() {
                 None
             } else {
                 Some(prepare_local_cwd(cwd).await?)
             };
-            let cloud_name = if use_cloud {
-                Some(resolve_unclaimed_cloud_name(cwd, cloud_name).await?)
+            let worktree_name = if use_worktree {
+                Some(resolve_unclaimed_worktree_name(cwd, worktree_name).await?)
             } else {
                 None
             };
 
-            let session_cwd = match &cloud_name {
+            let (session_cwd, recorded_branch) = match &worktree_name {
                 Some(name) => {
-                    let path = cloud_path(name);
-                    tokio::fs::create_dir_all(&path).await?;
-                    sandbox::ensure_image().await?;
-                    path
+                    let project =
+                        project_path.context("Choose a Git project for the Worktree session.")?;
+                    let (path, branch) =
+                        crate::worktrees::create(project, name, branch.or(base_ref)).await?;
+                    (path, Some(branch))
                 }
-                None => local_cwd.clone().unwrap_or_else(|| cwd.to_string()),
+                None => {
+                    let path = local_cwd.clone().unwrap_or_else(|| cwd.to_string());
+                    let branch = git::current_branch(&path).await;
+                    (path, branch)
+                }
             };
-            // Give the agent the Cloud-specific workspace instruction on the
-            // first prompt. Keep the original prompt for the session title.
-            let session_prompt = cloud_name
+            let session_prompt = worktree_name
                 .is_some()
-                .then(|| format!("{CLOUD_SESSION_PROMPT}\n\n{prompt}"));
+                .then(|| format!("{WORKTREE_SESSION_PROMPT}\n\n{prompt}"));
             let session_prompt = session_prompt.as_deref().unwrap_or(prompt);
-
-            // A Cloud has no checkout to inspect or modify. The selected branch
-            // is metadata for the prompt and UI only; no local branch is
-            // created, checked out, fetched, or mounted into the container.
-            let selected_branch = match branch
-                .map(str::to_string)
-                .or_else(|| base_ref.map(str::to_string))
-            {
-                Some(branch) => Some(branch),
-                None if cloud_name.is_some() => None,
-                None => git::current_branch(&session_cwd).await,
-            };
-            let recorded_branch = selected_branch.clone();
-            // Cloud's unselected-project behavior historically used `.` as its
-            // metadata marker. Local No Project sessions use an empty grouping
-            // key so they cannot be mistaken for a repository path.
-            let recorded_project_path =
-                project_path.unwrap_or(if cloud_name.is_some() { cwd } else { "" });
+            let recorded_project_path = project_path.unwrap_or("");
 
             let mut item = SessionIndexItem::new(
                 session_id,
                 harness,
                 &session_cwd,
                 recorded_project_path,
-                cloud_name.as_deref(),
+                worktree_name.as_deref(),
                 recorded_branch.as_deref(),
                 prompt,
                 model,
@@ -447,23 +435,16 @@ impl SessionManager {
             item.agent_model = agent_model.clone();
 
             // Index before the process starts, so startup failures remain
-            // visible and the user can retry after building/fixing Docker.
+            // visible and the user can retry.
             if let Err(error) = append_session_index_item(item.clone()).await {
-                if let Some(name) = cloud_name.as_deref() {
-                    sandbox::remove_volume(name).await;
+                if worktree_name.is_some() {
+                    let _ = crate::worktrees::remove(&session_cwd).await;
                 }
-                let _ = tokio::fs::remove_dir_all(&session_cwd).await;
                 return Err(error);
             }
             app.emit(SESSION_CREATED, &item).ok();
 
-            // Cloud work is inside a Docker volume, not the host project, so
-            // its changes must never be presented as local Git changes.
-            let baseline = if cloud_name.is_none() {
-                git::snapshot_tree(&session_cwd).await
-            } else {
-                None
-            };
+            let baseline = git::snapshot_tree(&session_cwd).await;
 
             let launch_cwd = session_cwd.as_str();
             let mut session = Session::init(
@@ -473,7 +454,6 @@ impl SessionManager {
                 effort,
                 launch_cwd,
                 &session_cwd,
-                cloud_name.as_deref(),
                 is_new_session,
                 None,
                 app,
@@ -491,15 +471,7 @@ impl SessionManager {
             crate::title::spawn_title_generation(
                 session_id,
                 prompt,
-                // Cloud's launch cwd is the empty host-side marker used by
-                // the Docker-backed session. Title generation runs as a
-                // local one-shot Lathe process, so use the selected project
-                // context instead (or "." when Cloud has no project).
-                if cloud_name.is_some() {
-                    cwd
-                } else {
-                    &session_cwd
-                },
+                &session_cwd,
                 title_model.as_ref(),
                 title_effort,
                 app,
@@ -522,6 +494,12 @@ impl SessionManager {
         // also where the baseline gets snapshotted, so a stale value would
         // diff the wrong tree.
         let indexed = get_session_index_item(session_id).await?;
+        if indexed
+            .as_ref()
+            .is_some_and(|item| item.cloud_name.is_some())
+        {
+            bail!("This legacy Cloud session uses Docker. Start a new Worktree session to continue locally.");
+        }
         let session_harness = indexed.as_ref().map(|item| item.harness).unwrap_or(harness);
         let session_cwd = match &indexed {
             Some(item) => item.cwd.clone(),
@@ -573,9 +551,7 @@ impl SessionManager {
                     return Ok(SendOutcome::default());
                 }
 
-                let queued = s
-                    .queue_msg(prompt, attachment_paths, from, false)
-                    .await;
+                let queued = s.queue_msg(prompt, attachment_paths, from, false).await;
                 return Ok(SendOutcome {
                     snapshot: None,
                     queued: Some(queued),
@@ -606,32 +582,9 @@ impl SessionManager {
         touch_session_index_item(session_id, model, model_spec.agent_model.as_ref(), effort)
             .await?;
 
-        // A fork that has not spawned yet. Cloud forks get a fresh private
-        // volume; the app transcript is still copied immediately, while the
-        // next Lathe process starts clean because the parent's Docker volume is
-        // deliberately never mounted into another session.
         let fork_from = indexed.as_ref().and_then(|i| i.fork_from.clone());
-        let cloud_name = indexed.as_ref().and_then(|i| i.cloud_name.clone());
-        let session_cwd = match &cloud_name {
-            Some(name) => {
-                let path = cloud_path(name);
-                tokio::fs::create_dir_all(&path).await?;
-                sandbox::ensure_image().await?;
-                path
-            }
-            None => session_cwd,
-        };
-        let baseline = if cloud_name.is_none() {
-            git::snapshot_tree(&session_cwd).await
-        } else {
-            None
-        };
-
-        let launch_cwd = if cloud_name.is_some() {
-            session_cwd.as_str()
-        } else {
-            cwd
-        };
+        let baseline = git::snapshot_tree(&session_cwd).await;
+        let launch_cwd = session_cwd.as_str();
         let mut session = Session::init(
             session_id,
             session_harness,
@@ -639,17 +592,8 @@ impl SessionManager {
             effort,
             launch_cwd,
             &session_cwd,
-            cloud_name.as_deref(),
             is_new_session,
-            // A Cloud fork's application transcript is preserved, but its
-            // Lathe context lives in the parent's private Docker volume. Starting
-            // a fresh Lathe context is safer than mounting another session's
-            // volume or accidentally sharing mutable state.
-            if cloud_name.is_none() {
-                fork_from.as_deref()
-            } else {
-                None
-            },
+            fork_from.as_deref(),
             app,
         )
         .await?;
@@ -670,10 +614,10 @@ impl SessionManager {
     }
 
     /// Copies a session onto a new id, to be continued separately from the one
-    /// it came from. `cloud` puts the fork in a tree of its own rather than
+    /// it came from. `worktree` puts the fork in a tree of its own rather than
     /// leaving it in the parent's directory.
     ///
-    /// Nothing spawns here. The CLI's fork only happens on a spawn, and spawning
+    /// Worktree forks create their checkout here; no agent process spawns. The CLI's fork only happens on a spawn, and spawning
     /// one to sit idle would cost a child process per fork and a turn's wait
     /// before the row appeared — so this writes the app's half now and leaves
     /// [`fork_from`](crate::store::SessionIndexItem::fork_from) as the
@@ -687,7 +631,7 @@ impl SessionManager {
         &self,
         session_id: &str,
         fork_id: &str,
-        cloud: bool,
+        worktree: bool,
     ) -> Result<SessionSnapshot> {
         let parent = get_session_index_item(session_id)
             .await?
@@ -699,16 +643,12 @@ impl SessionManager {
             }
         }
 
-        // Resolved against the project rather than the parent's own name, so a
-        // fork of a fork can't collide with the tree it came from — and against
-        // the index as well as disk, since a fork's tree does not exist until
-        // its first send.
-        // A Cloud cannot be forked into the host checkout: doing so would
-        // turn a Cloud fork into a different kind of session. Both menu
-        // choices therefore remain Cloud sessions when the parent is Cloud.
-        let cloud = cloud || parent.cloud_name.is_some();
-        let cloud_name = if cloud {
-            Some(resolve_unclaimed_cloud_name(&parent.project_path, None).await?)
+        // In-place forks share the checkout; separate forks get a newly pulled branch.
+        if parent.cloud_name.is_some() {
+            bail!("Legacy Cloud sessions cannot be forked into a local checkout.");
+        }
+        let worktree_name = if worktree {
+            Some(resolve_unclaimed_worktree_name(&parent.project_path, None).await?)
         } else {
             None
         };
@@ -725,8 +665,22 @@ impl SessionManager {
             bail!("this session has no conversation to fork yet");
         }
 
-        let item = parent.fork(fork_id, cloud_name.as_deref());
-        append_session_index_item(item.clone()).await?;
+        let mut item = parent.fork(fork_id, worktree_name.as_deref());
+        if let Some(name) = worktree_name.as_deref() {
+            let base = git::current_branch(&parent.cwd)
+                .await
+                .or(parent.branch.clone());
+            let (cwd, branch) =
+                crate::worktrees::create(&parent.project_path, name, base.as_deref()).await?;
+            item.cwd = cwd;
+            item.branch = Some(branch);
+        }
+        if let Err(error) = append_session_index_item(item.clone()).await {
+            if worktree {
+                let _ = crate::worktrees::remove(&item.cwd).await;
+            }
+            return Err(error);
+        }
 
         Ok(SessionSnapshot {
             index_item: item,
@@ -754,7 +708,6 @@ impl SessionManager {
         let events = session.events.clone();
         let seq = session.seq.clone();
         let cwd = session.cwd.clone();
-        let cloud = session.cloud;
         session.kill().await?;
 
         // Stop bypasses the runtime's settled event. Close the turn ourselves
@@ -766,9 +719,7 @@ impl SessionManager {
         };
         if let Some(mut event) = event {
             if let AgentEventPayload::TurnCompleted { head, .. } = &mut event.payload {
-                if !cloud {
-                    *head = git::snapshot_tree(&cwd).await;
-                }
+                *head = git::snapshot_tree(&cwd).await;
             }
             if let Err(error) = append_session_event(session_id, event.clone()).await {
                 eprintln!("[stop write err] {error}");
@@ -820,14 +771,13 @@ impl SessionManager {
             session.kill().await?;
         }
 
-        // Local Lathe sessions keep their context files beside Lathe; Cloud Lathe
-        // sessions keep them in the Docker volume, which is removed below.
+        // All local sessions keep their context files beside Lathe.
         if let Err(e) = dray::delete_session_data(session_id).await {
             eprintln!("could not delete Lathe session data for {session_id}: {e}");
         }
 
         if let Some(item) = get_session_index_item(session_id).await? {
-            remove_session_cloud(&item).await;
+            remove_session_worktree(&item).await;
         }
 
         // Best-effort: the images are a convenience for the transcript that is
@@ -980,10 +930,7 @@ pub struct Session {
     /// behalf of the frontend.
     pub stdin: Arc<Mutex<ChildStdin>>,
     pub harness: Harness,
-    /// Whether the child is a Lathe process inside a Docker Cloud sandbox.
-    pub cloud: bool,
-    /// The host-side directory used by the local UI. Cloud sessions keep their
-    /// actual files in Docker and this directory remains empty.
+    /// The checkout used by the agent and local UI.
     pub cwd: String,
     pub model: ModelId,
     pub agent_model: Option<AgentModel>,
@@ -1014,10 +961,8 @@ impl Session {
         model: &Model,
         effort: Option<Effort>,
         cwd: &str,
-        // The host-side marker used for local UI snapshots. A Cloud's real
-        // workspace is `/home/agent/workspace` inside Docker.
+        // The checkout used for Git snapshots.
         session_cwd: &str,
-        cloud_name: Option<&str>,
         is_new_session: bool,
         fork_from: Option<&str>,
         app: &AppHandle,
@@ -1029,7 +974,6 @@ impl Session {
             effort,
             cwd,
             session_cwd,
-            cloud_name,
             is_new_session,
             fork_from,
             app,
@@ -1041,8 +985,7 @@ impl Session {
     /// child's stdin — the CLI never echoes it back.
     ///
     /// `baseline` is the caller's working-tree snapshot, taken before this
-    /// prompt reaches the child. Cloud sessions pass `None` because their
-    /// workspace lives in Docker and is not a host Git checkout.
+    /// prompt reaches the child.
     pub async fn send_msg(
         &mut self,
         prompt: &str,
@@ -1105,7 +1048,11 @@ impl Session {
     /// leaving the composer alone: the prompt is on its way and the frontend
     /// learns so from the `user_message` that follows.
     pub async fn cancel_queued(&self) -> Option<QueuedMessage> {
-        self.queued.lock().await.pop().map(|pending| pending.message)
+        self.queued
+            .lock()
+            .await
+            .pop()
+            .map(|pending| pending.message)
     }
 
     /// Holds a prompt and immediately hands it over, for the case where a tool
@@ -1212,12 +1159,6 @@ impl Session {
     /// revive a session after it has been stopped.
     pub async fn kill(mut self) -> Result<()> {
         self.stopped.store(true, Relaxed);
-
-        if self.cloud {
-            // Killing the Docker client alone can orphan the container. Remove
-            // it first; the named volume intentionally survives for resume.
-            sandbox::remove_container(&self.id).await;
-        }
 
         #[cfg(windows)]
         if let Some(process_job) = self.process_job.take() {
@@ -1462,7 +1403,11 @@ pub async fn flush_queued(
             harness,
             &message.text,
             &message.attachment_paths,
-            if after_turn { turn_baseline.clone() } else { None },
+            if after_turn {
+                turn_baseline.clone()
+            } else {
+                None
+            },
             !after_turn,
             Some(&message.id),
             message.from,

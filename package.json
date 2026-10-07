@@ -10,7 +10,6 @@
     "app:no-watch": "pnpm --filter lathe run app:no-watch",
     "tauri": "pnpm --filter lathe run tauri",
     "build:app": "pnpm --filter lathe run build",
-    "build:sandbox": "pnpm --filter lathe run build:sandbox",
     "test": "pnpm --filter lathe run test"
   }
 }

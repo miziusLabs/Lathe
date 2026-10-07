@@ -11,7 +11,7 @@ const SEED: ComposerPrefs = {
   modelId: "dray",
   agentModel: null,
   effortByModel: {},
-  useCloud: false,
+  useWorktree: false,
 };
 
 /// Key by provider/model so Luna does not inherit a choice made for Astra.
@@ -27,7 +27,7 @@ export type ComposerPrefs = {
   modelId: ModelId;
   agentModel: AgentModel | null;
   effortByModel: EffortByModel;
-  useCloud: boolean;
+  useWorktree: boolean;
 };
 
 /// The sticky half of the composer. Every control the user can change writes here,

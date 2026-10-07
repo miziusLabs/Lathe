@@ -90,15 +90,7 @@ export function useSessions(titlePrefs: TitlePrefs, noProjectPath: string) {
     // The branch a switch is waiting on the user to confirm, because the tree
     // has uncommitted changes. Null when nothing is pending.
     const [pendingBranch, setPendingBranch] = useState<string | null>(null);
-    const [useCloud, setUseCloudState] = useState(() => prefs.useCloud);
-    // Null means the capability check is still in flight. Cloud remains off until
-    // Docker and the configured image are confirmed ready, so an unavailable
-    // prerequisite cannot be selected during startup or leave the new-task
-    // composer in a misleading state.
-    const [cloudAvailability, setCloudAvailability] = useState<{
-      available: boolean;
-      reason: string | null;
-    } | null>(null);
+    const [useWorktree, setUseWorktreeState] = useState(() => prefs.useWorktree);
     // Per-session, not global: sessions run concurrently and all of their events
     // arrive on the same channel, so a single value would clear on another's
     // turn. The backend drives this via `session_status`, and this map is the
@@ -128,9 +120,10 @@ export function useSessions(titlePrefs: TitlePrefs, noProjectPath: string) {
     const [asksBySession, setAsksBySession] = useState<Record<string, string[]>>({});
     const [error, setError] = useState<string | null>(null);
 
-// The preference can remain sticky across launches, but Cloud is only an active
-// mode after Docker and its image have answered the capability check successfully.
-const cloudEnabled = useCloud && cloudAvailability?.available === true;
+// The preference can remain sticky across launches, but Worktree is only an active
+// mode when a Git project is selected.
+const worktreeAvailable = !!projectPath && (branches?.branches.length ?? 0) > 0;
+const worktreeEnabled = useWorktree && worktreeAvailable;
 
 // What actually gets sent for the current model: its remembered pick, else its
 // own default, and null for a model that takes no effort flag at all.
@@ -160,16 +153,18 @@ const handleModelChange = (
 
 // Wrapped rather than exported raw: picking a mode is a preference, and the
 // hotkey in App.tsx goes through here too.
-// Sticky, unlike before. Someone who works in clouds works in clouds; the
+// Sticky, unlike before. Someone who works in worktrees works in worktrees; the
 // old reset-to-off made them re-toggle it for every single task.
 //
 // Resolved against the rendered value rather than inside the state updater: React
 // may run an updater twice, and writing the preference from in there would fire
 // the side effect twice with it.
-const setUseCloud = (next: boolean | ((prev: boolean) => boolean)) => {
-  const resolved = typeof next === "function" ? next(useCloud) : next;
-  setUseCloudState(resolved);
-  setPrefs({ useCloud: resolved });
+const setUseWorktree = (next: boolean | ((prev: boolean) => boolean)) => {
+  const resolved = typeof next === "function" ? next(useWorktree) : next;
+  setPendingBranch(null);
+  setBranch(branches?.current ?? null);
+  setUseWorktreeState(resolved);
+  setPrefs({ useWorktree: resolved });
 };
 
 // Attaching a known project just selects it, so this doubles as "switch to one
@@ -260,14 +255,15 @@ const runCheckout = async (target: string, stash: boolean) => {
 // fetched when the project was selected, and the user has been editing files
 // since. A stale zero silently skips the dialog and moves their work.
 const handleSelectBranch = async (target: string) => {
-  if (!projectPath || target === branches?.current) return;
+  if (!projectPath) return;
 
-  // Cloud only records the branch as prompt metadata. Never check out or
-  // mutate the host project: the sandbox does not contain that repository.
-  if (cloudEnabled) {
+  // Select the source branch without switching the project checkout.
+  if (worktreeEnabled) {
     setBranch(target);
     return;
   }
+
+  if (target === branches?.current) return;
 
   let list: BranchList;
   try {
@@ -341,14 +337,9 @@ const handleSendMsg = async (
   const isNewSession = !sessionId;
 
   const existing = sessionId ? sessions.find((s) => s.sessionId === sessionId) : undefined;
-  // A Cloud starts in an empty Docker workspace, so a project is optional.
-  // Keep the selected project as metadata when there is one, but use the
-  // current app directory as a valid launch context when there is not.
   const configuredNoProjectPath = noProjectPath.trim() || DEFAULT_NO_PROJECT_PATH;
   const cwd = isNewSession
-    ? cloudEnabled
-      ? projectPath ?? "."
-      : projectPath ?? configuredNoProjectPath
+    ? projectPath ?? configuredNoProjectPath
     : existing?.cwd ?? projectPath;
 
   if (!cwd) {
@@ -390,11 +381,10 @@ const handleSendMsg = async (
       titleEffort: titlePrefs.effort,
       cwd,
       projectPath,
-      // Cloud only records branch context; it never checks out the selected
-      // project.
+      // Worktree creation uses this source branch in a separate checkout.
       branch: isNewSession ? branch : null,
-      useCloud: isNewSession && cloudEnabled,
-      cloudName: null,
+      useWorktree: isNewSession && worktreeEnabled,
+      worktreeName: null,
       isNewSession,
       queueAfterTurn,
     });
@@ -417,7 +407,7 @@ const handleSendMsg = async (
     const { snapshot } = outcome;
 
     // Only a new session yields a snapshot. Built by the backend, so the resolved
-    // cloud name and truncated title come from disk rather than a guess here.
+    // worktree name and truncated title come from disk rather than a guess here.
     if (snapshot) {
       upsertSession(snapshot);
       // A new session is never archived, so it belongs to the active list only —
@@ -511,7 +501,7 @@ const handleNewSession = () => {
   setModelId(prefs.modelId);
   setAgentModel(prefs.agentModel);
   setEffortByModel(prefs.effortByModel);
-  setUseCloudState(prefs.useCloud);
+  setUseWorktreeState(prefs.useWorktree);
   setBranch(branches?.current ?? null);
 };
 
@@ -524,7 +514,7 @@ const handleNewSession = () => {
 // `sessionIndexItems` until the render after it is made, and it needs this on
 // the way in like any other session being opened.
 //
-// Project, branch, and the cloud flag aren't restored — the composer hides
+// Project, branch, and the worktree flag aren't restored — the composer hides
 // all three once a session exists, and they'd only mislead the next new chat.
 const restoreSessionControls = (item: SessionIndexItem) => {
   setHarnessState(item.harness);
@@ -704,7 +694,7 @@ const setSessionFlags = async (
 // spawns yet: the backend leaves the CLI's own fork for the first send, and the
 // snapshot it returns is the parent's copied log, so the new session opens
 // reading exactly like the one it came from.
-const forkSession = async (sessionId: string, cloud: boolean) => {
+const forkSession = async (sessionId: string, worktree: boolean) => {
   const forkId = crypto.randomUUID();
 
   let snapshot: SessionSnapshot;
@@ -712,7 +702,7 @@ const forkSession = async (sessionId: string, cloud: boolean) => {
     snapshot = await invoke<SessionSnapshot>("fork_session", {
       sessionId,
       forkId,
-      cloud,
+      worktree,
     });
   } catch (e) {
     setError(String(e));
@@ -792,27 +782,6 @@ useEffect(() => {
     cancelled = true;
   };
 }, [harness, projectPath, accountRevision])
-
-useEffect(() => {
-  let cancelled = false;
-  invoke<{ available: boolean; reason: string | null }>("cloud_availability")
-    .then((availability) => {
-      if (!cancelled) setCloudAvailability(availability);
-    })
-    .catch(() => {
-      // Docker is optional for local sessions, so an unavailable capability is
-      // represented by the disabled Cloud control rather than an app error.
-      if (!cancelled) {
-        setCloudAvailability({
-          available: false,
-          reason: "Docker is not installed or is not running.",
-        });
-      }
-    });
-  return () => {
-    cancelled = true;
-  };
-}, [])
 
 useEffect(() => {
   invoke<Project[]>("list_projects")
@@ -1393,6 +1362,6 @@ const contextUsage: { used: number; max: number } | null = (() => {
   return used !== null && max !== null ? { used, max } : null;
 })();
 
-return {sessions, selectedSessionId, selectedSession, streamingContentBlock, sessionIndexItems, statusBySession, askingSessions, showArchived, setShowArchived, harness, models, modelId, agentModel, effort, projects, projectPath, branches, branch, useCloud: cloudEnabled, cloudAvailable: cloudAvailability?.available === true, cloudUnavailableReason: cloudAvailability?.reason ?? "Checking Cloud availability…", busy, working, compacting, contextUsage, error, setError, handleModelChange, handleAttachProject, handleSelectProject, handleRenameProject, handleDeleteProject, handleReorderProjects, handleSelectBranch, pendingBranch, setPendingBranch, runCheckout, setUseCloud, handleSendMsg, handleInterrupt, queuedMessages, handleCancelQueued, handleAnswerQuestions, handleSelectSessionIndexItem, handleNewSession, setSessionFlags, forkSession, detachSession, deleteSession};
+return {sessions, selectedSessionId, selectedSession, streamingContentBlock, sessionIndexItems, statusBySession, askingSessions, showArchived, setShowArchived, harness, models, modelId, agentModel, effort, projects, projectPath, branches, branch, useWorktree: worktreeEnabled, worktreeAvailable, worktreeUnavailableReason: "Select a Git project to create a Worktree.", busy, working, compacting, contextUsage, error, setError, handleModelChange, handleAttachProject, handleSelectProject, handleRenameProject, handleDeleteProject, handleReorderProjects, handleSelectBranch, pendingBranch, setPendingBranch, runCheckout, setUseWorktree, handleSendMsg, handleInterrupt, queuedMessages, handleCancelQueued, handleAnswerQuestions, handleSelectSessionIndexItem, handleNewSession, setSessionFlags, forkSession, detachSession, deleteSession};
 
 }

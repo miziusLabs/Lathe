@@ -1,6 +1,6 @@
 # Lathe repository guide
 
-Lathe is a Tauri 2 desktop application for running coding-agent sessions through a native chat UI. The agent is implemented in Rust in `packages/agent`, embedded in the desktop binary and built separately for Docker. ChatGPT OAuth provides access to the account-specific OpenAI model catalog. The frontend is React 19 + Vite 7 + Tailwind CSS 4; the backend is Rust and owns process/session management, persistence, Git/GitHub integration, file indexing, attachments, notifications, and Docker-backed Cloud Sessions.
+Lathe is a Tauri 2 desktop application for running coding-agent sessions through a native chat UI. The agent is implemented in Rust in `packages/agent`, embedded in the desktop binary. ChatGPT OAuth provides access to the account-specific OpenAI model catalog. The frontend is React 19 + Vite 7 + Tailwind CSS 4; the backend is Rust and owns process/session management, persistence, Git/GitHub integration, file indexing, attachments, notifications, and local Git Worktree Sessions.
 
 This file is the implementation map for agents working in this repository. Keep the user-facing overview in `README.md` concise; update this file when components, major behavior, or repository structure change.
 
@@ -13,8 +13,7 @@ This file is the implementation map for agents working in this repository. Keep 
 - `apps/desktop/src/lib/` — pure helpers, transcript/diff parsing, presentation logic, and small platform integrations.
 - `apps/desktop/src/types/events.ts` — generated Rust/TypeScript event and command types. `cargo test` regenerates it through `ts-rs`; avoid hand-maintaining generated definitions.
 - `apps/desktop/src-tauri/src/` — Rust backend and Tauri command surface.
-- `apps/desktop/sandbox/` — Docker image used by Cloud Sessions.
-- `apps/desktop/scripts/` — Tauri launcher, sandbox builder, Windows installer, and icon tooling.
+- `apps/desktop/scripts/` — Tauri launcher, Windows installer, and icon tooling.
 - `apps/desktop/public/` — app assets, sounds, and logos.
 - `packages/agent/` — standalone Rust runtime, streaming Responses transport, tools, process cleanup, skill discovery, and embedded prompts.
 
@@ -22,7 +21,7 @@ This file is the implementation map for agents working in this repository. Keep 
 
 - Native desktop chat UI for Lathe coding-agent sessions.
 - Multiple persistent sessions with search, unread/waiting/working state, pinning, settling/archiving, deletion, forking, and parent/child nesting.
-- Local Sessions that run in a selected project checkout and Cloud Sessions that run the native Lathe agent inside an isolated Docker container and persistent Docker volume.
+- Local Sessions that run in a selected project checkout and Worktree Sessions that run in separate Git checkouts under `<repo>/.lathe/worktrees`.
 - Project picker with attach, rename, delete-from-picker, manual ordering, and remembered selection.
 - Git branch discovery and switching, including dirty-worktree handling before checkout.
 - Account-specific OpenAI model catalog with model selection, reasoning/effort selection, configurable model cycling, and separate model/effort preferences for generated session titles.
@@ -72,11 +71,11 @@ Top-level components in `src/components/`:
 
 Files in `src/components/composer/`:
 
-- `ComposerToolbar.tsx` — attachment, project, cloud/local, branch, model, effort, and context controls.
+- `ComposerToolbar.tsx` — attachment, project, worktree/local, branch, model, effort, and context controls.
 - `ProjectSelector.tsx` — attach/select/reorder/rename/remove projects.
 - `BranchSelector.tsx` — branch picker and dirty-worktree warning context.
 - `BranchSwitchDialog.tsx` — branch-switch resolution when local changes need handling.
-- `CloudToggle.tsx` — toggles Docker-backed Cloud Session mode.
+- `WorktreeToggle.tsx` — toggles local Worktree Session mode.
 - `ModelSelector.tsx` — model and effort picker plus model-label/key helpers.
 - `ContextMeter.tsx` — visual model-context usage meter.
 - `AttachmentTray.tsx` — pending attachment previews/removal.
@@ -125,7 +124,7 @@ Files in `src/components/chat/`:
 
 Files in `src/hooks/`:
 
-- `useSessions.ts` — central frontend session state: session index/snapshots, model/project/branch/cloud controls, send/queue/interrupt/stop/respond/fork/detach/delete operations, backend event subscriptions, status/unread state, notices, and context/background-task derivation.
+- `useSessions.ts` — central frontend session state: session index/snapshots, model/project/branch/worktree controls, send/queue/interrupt/stop/respond/fork/detach/delete operations, backend event subscriptions, status/unread state, notices, and context/background-task derivation.
 - `useWorkStatus.ts` — working tree, branch, upstream, default branch, and ahead/dirty state for handoff actions.
 - `usePrMarks.ts` — per-repository cached PR markers for sidebar sessions.
 - `usePrReady.ts` — announces PRs that become ready to merge.
@@ -133,7 +132,7 @@ Files in `src/hooks/`:
 - `useFileSearch.ts` — warms and queries the Rust fuzzy file index.
 - `useSlashCommands.ts` — loads/caches native skills per working directory.
 - `useRecentCommands.ts` — persists recent command/skill usage.
-- `useComposerPrefs.ts` — persisted composer model/effort/cloud preferences.
+- `useComposerPrefs.ts` — persisted composer model/effort/worktree preferences.
 - `useTitlePrefs.ts` — persisted title-generation model and effort.
 - `useDraft.ts` — per-session unsent composer drafts.
 - `useNotices.ts` — in-app notice state.
@@ -180,14 +179,14 @@ Files in `src-tauri/src/`:
 
 - `main.rs` — native executable entry point.
 - `lib.rs` — Tauri builder, window lifecycle, command registration, and frontend-facing command wrappers.
-- `session.rs` — core process/session manager: spawn/resume the native agent, local/cloud execution, stdin protocol, event streaming, prompt queuing, model changes, background-task control, forks, interrupt/kill, deletion, and status publication.
+- `session.rs` — core process/session manager: spawn/resume the native agent, local/worktree execution, stdin protocol, event streaming, prompt queuing, model changes, background-task control, forks, interrupt/kill, deletion, and status publication.
 - `store.rs` — persistent session logs/index/snapshots, status flags, nesting metadata, and archive/pin state.
 - `projects.rs` — persistent attached-project list, names, and recent selection ordering.
 - `git.rs` — branch operations, tree snapshots, turn/revision diffs, file-version reads, commit log, work/sync status, commit, and push operations.
 - `github.rs` — `gh`-based PR discovery, sidebar marks, checks/comments/reviews, ready/reopen/merge operations, and GitHub state normalization.
 - `files.rs` — cached fuzzy file index used by `@file` mentions.
 - `attachments.rs` — attachment validation/description, image encoding, session attachment storage, and returned-image archiving.
-- `sandbox.rs` — Docker image/container/volume management for Cloud Sessions and GitHub credential handoff.
+- `worktrees.rs` — Git worktree creation, remote fetch/fast-forward pull, and safe removal.
 - `notifications.rs` — native desktop notifications and click handling.
 - `quit.rs` — active-work quit interception and confirmation.
 - `title.rs` — generated session-title behavior.
@@ -196,7 +195,7 @@ Files in `src-tauri/src/`:
 - `events/events.rs` — shared serializable event/domain model exported to TypeScript.
 - `events/usage.rs` — token/context usage normalization.
 - `harness/harness.rs` — harness abstraction and selection; Lathe native agent only.
-- `harness/dray/dray.rs` — native process/Docker transport, auth delivery, persistence, and snapshots.
+- `harness/dray/dray.rs` — native process transport, auth delivery, persistence, and snapshots.
 - `harness/dray/parser.rs` — native JSON-line event parsing.
 - `harness/dray/mapper.rs` — maps native runtime events into the normalized event model.
 - `harness/dray/commands.rs` — account model catalog and `.agents/skills` discovery.
@@ -206,18 +205,18 @@ Files in `src-tauri/src/`:
 
 The frontend-facing Tauri command surface covers session send/read/control, attachments, models, commands/skills, file search, projects, branches, Git diffs/history/status, session flags/forks/deletion, notifications, PR operations, and quit confirmation. Add new native capabilities through a narrow command in `lib.rs` and keep implementation in the owning module.
 
-## Cloud Sessions
+## Worktree Sessions
 
-Cloud mode is local Docker isolation, not a hosted service. `src-tauri/src/sandbox.rs` creates one container per live session and one persistent volume per cloud workspace. The selected project is not bind-mounted or cloned automatically; the agent starts in the sandbox and performs any repository setup it needs.
-
-The image is defined by `apps/desktop/sandbox/Dockerfile` and launched through
-`sandbox-entrypoint.sh`. A Rust build stage creates `lathe-agent`; the runtime
-includes Java 21, Java 25, Node.js 24, GitHub CLI, and Git. Host `~/.mizius/skills`
-is mounted read-only. History lives in the persistent workspace volume.
-OAuth credentials remain on the host; short-lived access tokens travel through
-stdin. GitHub credentials are exposed only to the container and converted to
-`GH_TOKEN` for authenticated HTTPS Git access.
-Use `DRAY_CLOUD_IMAGE` to override the Docker image tag. `GITHUB_TOKEN` or an authenticated host `gh` can provide the token forwarded to a Cloud Session.
+Worktree mode requires a Git project and source branch. `worktrees.rs` creates
+`<repo>/.lathe/worktrees/<uuid>` on `lathe/<uuid>`, fetches the source remote,
+and pulls with `--ff-only` in the new checkout. Failed updates cancel creation;
+the source checkout is never switched or merged. Nested worktrees are ignored
+through the shared Git info/exclude. Agent context stays in the normal app store.
+Forks can continue in place or create a new checkout; separate forks retain
+agent history. Git snapshots, handoff actions, and file search use the actual
+worktree cwd. Deletion never forces removal of dirty or shared checkouts.
+Legacy `cloudName` remains in persisted data to preserve old transcripts;
+resuming/forking legacy Cloud sessions is refused and their volumes are untouched.
 
 ## Built-in agent
 
@@ -269,20 +268,19 @@ Light, dark, and purple development icon masters live in
 with `pnpm --filter lathe icons` after replacing a master. Development builds
 use `icons/dev`. The dark master is retained as an appearance variant; it is
 not currently selected automatically by the native app. The desktop package and
-standalone executable are `lathe` and `lathe-agent`; the default Cloud image is
-`lathe-cloud:latest`. Legacy `dray` harness/model
+standalone executable are `lathe` and `lathe-agent`. Legacy `dray` harness/model
 IDs, tool namespaces, preferences, data directories, environment variables, and
-Docker resource names remain stable to preserve existing sessions and workspaces.
+legacy data remain stable to preserve existing sessions and workspaces.
 The GitHub repository and updater endpoint still use `miziusLabs/Dray`.
 
 ## Important interaction rules
 
-- A local session is tied to a project/checkout; a Cloud Session has no local repository view.
+- A local session is tied to a project/checkout; a Worktree Session uses its own local checkout.
 - Completed-turn changes use Git tree snapshots. Do not replace them with a live `git diff` or the UI will drift after later edits.
 - GitHub integration intentionally uses the user's installed/authenticated `gh` CLI rather than owning GitHub authentication.
 - Session status distinguishes active work, waiting-for-user requests, completed-but-unread work, and idle/read work. Sidebar indicators and OS notices depend on that distinction.
 - Parent/child session nesting represents forks/subsessions. Detach changes hierarchy; delete removes the session and its persisted data/resources.
-- Cloud containers and volumes are named from session/cloud IDs. Treat cleanup logic as user-data-sensitive.
+- Worktree cleanup is user-data-sensitive: preserve dirty and shared checkouts.
 - Generated TypeScript event types mirror Rust. Change the Rust model first and regenerate.
 - Local links in Markdown use a proxy/unwrap path because normal browser link handling cannot safely expose arbitrary local paths directly.
 
@@ -307,7 +305,6 @@ pnpm app
 pnpm app:no-watch
 pnpm test
 pnpm build:app
-pnpm build:sandbox
 ```
 
 Run commands whose config paths are app-relative from the owning directory:

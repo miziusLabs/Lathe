@@ -342,38 +342,37 @@ describe("sessionGroups", () => {
     expect(shape(sessionGroups(items))).toEqual([["/a", ["parent", "child"]]]);
   });
 
-  it("groups Cloud sessions under the synthetic Cloud project", () => {
-    const cloud = (
+  it("groups Worktree sessions under their source project", () => {
+    const worktree = (
       sessionId: string,
       modified: string,
       parentSessionId: string | null = null,
     ) =>
       ({
         ...item(sessionId, modified, parentSessionId, "/source"),
-        cloudName: "cloud-workspace",
+        worktreeName: "worktree-workspace",
       }) as SessionIndexItem;
     const items = [
       item("local", "2026-03-01T00:00:00Z", null, "/repo"),
-      cloud("cloud-old", "2026-01-01T00:00:00Z"),
-      cloud("cloud-new", "2026-02-01T00:00:00Z"),
+      worktree("worktree-old", "2026-01-01T00:00:00Z"),
+      worktree("worktree-new", "2026-02-01T00:00:00Z"),
     ];
 
     expect(shape(sessionGroups(items, [project("/repo")]))).toEqual([
       ["/repo", ["local"]],
-      ["Cloud", ["cloud-new", "cloud-old"]],
+      ["/source", ["worktree-new", "worktree-old"]],
     ]);
   });
 
-  it("does not nest a Cloud child under a local project", () => {
+  it("nests a Worktree child under its source session", () => {
     const parent = item("parent", "2026-02-01T00:00:00Z", null, "/repo");
     const child = {
       ...item("child", "2026-01-01T00:00:00Z", "parent", "/repo"),
-      cloudName: "cloud-workspace",
+      worktreeName: "worktree-workspace",
     } as SessionIndexItem;
 
     expect(shape(sessionGroups([parent, child]))).toEqual([
-      ["/repo", ["parent"]],
-      ["Cloud", ["child"]],
+      ["/repo", ["parent", "child"]],
     ]);
   });
 

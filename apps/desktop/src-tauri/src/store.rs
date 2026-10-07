@@ -41,14 +41,16 @@ pub struct SessionIndexItem {
     pub session_id: String,
     pub harness: Harness,
     /// Where the agent actually runs. Equals `project_path` for a normal
-    /// session; points inside `~/.dray/cloud/<id>` for a Cloud one.
+    /// session; points inside `<project>/.lathe/worktrees/<id>` for a Worktree one.
     pub cwd: String,
-    /// Project metadata used for sidebar grouping; empty for No Project. A
-    /// Cloud does not mount or clone this project.
+    /// Project metadata used for sidebar grouping; empty for No Project.
+    /// Worktree sessions share this repository through a separate checkout.
     pub project_path: String,
     pub branch: Option<String>,
-    /// `Some` marks this a Cloud session. Cloud sessions use a private Docker
-    /// volume identified by this name; the host project is never mounted.
+    /// Identifies a managed local Git worktree.
+    #[serde(default)]
+    pub worktree_name: Option<String>,
+    /// Legacy Docker workspace. Kept for existing session data.
     #[serde(default)]
     pub cloud_name: Option<String>,
     pub title: String,
@@ -250,7 +252,7 @@ impl SessionIndexItem {
         harness: Harness,
         cwd: &str,
         project_path: &str,
-        cloud_name: Option<&str>,
+        worktree_name: Option<&str>,
         branch: Option<&str>,
         first_prompt: &str,
         model: ModelId,
@@ -265,9 +267,10 @@ impl SessionIndexItem {
             cwd: cwd.to_string(),
             project_path: project_path.to_string(),
             // The caller knows the branch metadata; nothing is derived from the
-            // Cloud name here.
+            // Worktree name here.
             branch: branch.map(str::to_string),
-            cloud_name: cloud_name.map(str::to_string),
+            worktree_name: worktree_name.map(str::to_string),
+            cloud_name: None,
             title: title_from_prompt(first_prompt),
             model,
             agent_model: None,
@@ -286,24 +289,25 @@ impl SessionIndexItem {
     /// is inherited, since a fork continues the same conversation; everything
     /// describing this session's own history starts fresh.
     ///
-    /// `cloud_name` is what the two fork flavours differ on. Forking in place
-    /// leaves it `None`; a Cloud fork gets a private Docker volume, while an
-    /// in-place fork continues using the parent's local directory.
-    pub fn fork(&self, session_id: &str, cloud_name: Option<&str>) -> Self {
+    /// In-place forks share the existing checkout and identity. A Worktree fork
+    /// gets a separate checkout, whose final path and branch the manager sets.
+    pub fn fork(&self, session_id: &str, worktree_name: Option<&str>) -> Self {
         let now = now_rfc3339();
 
         Self {
             session_id: session_id.to_string(),
             harness: self.harness,
-            cwd: match cloud_name {
-                Some(name) => cloud_path(name),
+            cwd: match worktree_name {
+                Some(name) => worktree_path(&self.project_path, name),
                 None => self.cwd.clone(),
             },
             project_path: self.project_path.clone(),
-            // Both fork flavours inherit the parent's branch: the Cloud fork
-            // gets a private volume, not a branch of its own.
+            // A managed fork’s branch is set after its checkout is created.
             branch: self.branch.clone(),
-            cloud_name: cloud_name.map(str::to_string),
+            worktree_name: worktree_name
+                .map(str::to_string)
+                .or_else(|| self.worktree_name.clone()),
+            cloud_name: None,
             title: fork_title(&self.title),
             model: self.model,
             agent_model: self.agent_model.clone(),
@@ -351,31 +355,28 @@ fn fork_title(parent: &str) -> String {
     format!("{}…{SUFFIX}", truncated.trim_end())
 }
 
-/// A Cloud id no other session has claimed. The id names the Docker volume and
-/// the empty host-side workspace used by local UI APIs.
-pub async fn resolve_unclaimed_cloud_name(
-    _project_path: &str,
+/// A Worktree id no other session has claimed.
+pub async fn resolve_unclaimed_worktree_name(
+    project_path: &str,
     _requested: Option<&str>,
 ) -> Result<String> {
     let claimed: Vec<String> = list_session_index_items()
         .await?
         .into_iter()
-        .filter_map(|i| i.cloud_name)
+        .filter_map(|i| i.worktree_name)
         .collect();
 
     for _ in 0..16 {
-        let id = random_cloud_id();
-        if !claimed.contains(&id) && !PathBuf::from(cloud_path(&id)).exists() {
+        let id = random_worktree_id();
+        if !claimed.contains(&id) && !PathBuf::from(worktree_path(project_path, &id)).exists() {
             return Ok(id);
         }
     }
 
-    bail!("could not find an unused cloud id after 16 attempts")
+    bail!("could not find an unused worktree id after 16 attempts")
 }
 
-/// The branch a session's work lands on. Cloud sessions have no checkout, so
-/// their recorded branch is always the value supplied to the session prompt;
-/// local sessions prefer Git's current branch while it is available.
+/// Prefer the checkout's current branch, falling back to persisted metadata.
 pub fn session_branch(item: &SessionIndexItem, observed: Option<&str>) -> Option<String> {
     observed
         .filter(|b| !b.is_empty())
@@ -383,19 +384,13 @@ pub fn session_branch(item: &SessionIndexItem, observed: Option<&str>) -> Option
         .or_else(|| item.branch.clone())
 }
 
-/// Empty host-side workspace paths are kept separate from project checkouts.
-/// They are not mounted into Docker; Cloud state lives in Docker volumes.
-pub fn cloud_path(id: &str) -> String {
-    app_home_dir()
-        .expect("a Lathe data directory is required for Clouds")
-        .join("cloud")
-        .join(id)
-        .to_string_lossy()
-        .into_owned()
+/// Managed checkouts live inside the selected repository.
+pub fn worktree_path(project: &str, id: &str) -> String {
+    crate::worktrees::path(project, id)
 }
 
-/// A cloud id is a random UUID-4.
-fn random_cloud_id() -> String {
+/// A worktree id is a random UUID-4.
+fn random_worktree_id() -> String {
     Uuid::new_v4().to_string()
 }
 
@@ -919,15 +914,13 @@ mod tests {
         assert_eq!(item.fork_from, None);
     }
 
-    /// Forking in place must not claim the parent's tree: `cloud_name` is what
-    /// settling and deleting act on, so a fork carrying it would take the
-    /// directory out from under the session still working in it.
+    /// In-place forks retain the worktree identity so cleanup checks all users.
     #[test]
-    fn forking_in_place_inherits_the_tree_without_owning_it() {
+    fn forking_in_place_shares_the_managed_tree() {
         let mut parent = SessionIndexItem::new(
             "parent",
             Harness::Dray,
-            "/p/.dray/cloud/wt",
+            "/p/.lathe/worktrees/wt",
             "/p",
             Some("wt"),
             Some("main"),
@@ -944,7 +937,11 @@ mod tests {
 
         assert_eq!(fork.cwd, parent.cwd, "the fork runs where the parent does");
         assert_eq!(fork.branch, parent.branch, "so its PR tab finds the branch");
-        assert_eq!(fork.cloud_name, None, "but it does not own the tree");
+        assert_eq!(
+            fork.worktree_name.as_deref(),
+            Some("wt"),
+            "the checkout is shared"
+        );
         assert_eq!(fork.fork_from.as_deref(), Some("parent"));
 
         // How the agent runs is inherited; this session's own history is not.
@@ -959,10 +956,10 @@ mod tests {
     /// the PR tab cannot come to disagree about which branch a session is on.
     #[test]
     fn a_sessions_branch_reads_the_same_way_the_pr_tab_reads_it() {
-        let cloud = SessionIndexItem::new(
+        let worktree = SessionIndexItem::new(
             "a",
             Harness::Dray,
-            "/p/.dray/cloud/calm-owl",
+            "/p/.lathe/worktrees/calm-owl",
             "/p",
             Some("calm-owl"),
             Some("main"),
@@ -971,13 +968,13 @@ mod tests {
             None,
             None,
         );
-        // Cloud branch metadata is recorded directly rather than rebuilt from
-        // the Cloud volume name.
-        assert_eq!(session_branch(&cloud, None).as_deref(), Some("main"));
+        // Worktree branch metadata is recorded directly rather than rebuilt from
+        // the Worktree directory name.
+        assert_eq!(session_branch(&worktree, None).as_deref(), Some("main"));
         // Git's own reading outranks the recorded branch: anything checking out
         // another branch inside the tree leaves the record describing one it left.
         assert_eq!(
-            session_branch(&cloud, Some("fix/thing")).as_deref(),
+            session_branch(&worktree, Some("fix/thing")).as_deref(),
             Some("fix/thing")
         );
 
@@ -1029,7 +1026,7 @@ mod tests {
     }
 
     #[test]
-    fn forking_into_a_cloud_takes_a_tree_of_its_own() {
+    fn forking_into_a_worktree_takes_a_tree_of_its_own() {
         let parent = SessionIndexItem::new(
             "parent",
             Harness::Dray,
@@ -1045,13 +1042,13 @@ mod tests {
 
         let fork = parent.fork("child", Some("bold-otter"));
 
-        assert_eq!(fork.cwd, cloud_path("bold-otter"));
+        assert_eq!(fork.cwd, worktree_path("/p", "bold-otter"));
         assert_eq!(fork.project_path, "/p", "it still groups under the project");
-        assert_eq!(fork.cloud_name.as_deref(), Some("bold-otter"));
+        assert_eq!(fork.worktree_name.as_deref(), Some("bold-otter"));
         assert_eq!(
             fork.branch.as_deref(),
             parent.branch.as_deref(),
-            "a Cloud fork gets a private volume, not a branch of its own"
+            "the manager assigns a new branch after checkout creation"
         );
     }
 
@@ -1187,14 +1184,14 @@ mod tests {
         );
     }
 
-    /// A Cloud session records branch metadata for its prompt. The constructor
+    /// A Worktree session records branch metadata for its prompt. The constructor
     /// preserves the branch supplied by the session manager.
     #[test]
-    fn a_cloud_session_records_the_branch_its_work_lands_on() {
+    fn a_worktree_session_records_the_branch_its_work_lands_on() {
         let item = SessionIndexItem::new(
             "a",
             Harness::Dray,
-            "/p/.dray/cloud/calm-owl",
+            "/p/.lathe/worktrees/calm-owl",
             "/p",
             Some("calm-owl"),
             Some("main"),

@@ -75,7 +75,7 @@ type SidebarProps = {
     sessionId: string,
     flags: { archived?: boolean; pinned?: boolean },
   ) => Promise<void>;
-  onFork: (sessionId: string, cloud: boolean) => Promise<void>;
+  onFork: (sessionId: string, worktree: boolean) => Promise<void>;
   onDelete: (sessionId: string) => Promise<void>;
   onDetach: (sessionId: string) => Promise<void>;
   showArchived: boolean;
@@ -85,10 +85,6 @@ type SidebarProps = {
 
 /// One drawn row: the session, how deep it sits, and the flags its connector
 /// rails are drawn from.
-const CLOUD_PROJECT_PATH = "Cloud";
-
-const isCloudSession = (item: SessionIndexItem) => item.cloudName != null;
-
 export type SessionListRow = {
   item: SessionIndexItem;
   /// Levels below the top. 0 is a root and draws no connector at all.
@@ -128,9 +124,7 @@ export function sessionRows(items: SessionIndexItem[]): SessionListRow[] {
   const parentOf = (i: SessionIndexItem) => {
     if (!i.parentSessionId) return null;
     const parent = present.get(i.parentSessionId);
-    return parent && isCloudSession(parent) === isCloudSession(i)
-      ? i.parentSessionId
-      : null;
+    return parent ? i.parentSessionId : null;
   };
 
   const children = new Map<string, SessionIndexItem[]>();
@@ -221,9 +215,7 @@ export function sessionGroups(
     // Every subtree the walk emits opens with its own root, so a depth-0 row is
     // where one run ends and the next begins.
     if (row.depth === 0 || !current) {
-      const path = isCloudSession(row.item)
-        ? CLOUD_PROJECT_PATH
-        : row.item.projectPath;
+      const path = row.item.projectPath;
       current = byPath.get(path);
       if (!current) {
         current = { projectPath: path, rows: [] };
@@ -238,9 +230,7 @@ export function sessionGroups(
   // so those keep the order they were built in.
   const rank = new Map(projects.map((p, i) => [p.path, i]));
   const place = (group: SessionGroup) =>
-    group.projectPath === CLOUD_PROJECT_PATH
-      ? Number.MAX_SAFE_INTEGER
-      : (rank.get(group.projectPath) ?? Number.MAX_SAFE_INTEGER);
+    rank.get(group.projectPath) ?? Number.MAX_SAFE_INTEGER;
 
   return groups.sort((a, b) => place(a) - place(b));
 }
@@ -475,11 +465,7 @@ export default function Sidebar({
   const projectName = useMemo(() => {
     const named = new Map(projects.map((p) => [p.path, p.name]));
     return (path: string) =>
-      path === CLOUD_PROJECT_PATH
-        ? CLOUD_PROJECT_PATH
-        : path === ""
-          ? "No Project"
-          : (named.get(path) ?? basename(path));
+      path === "" ? "No Project" : (named.get(path) ?? basename(path));
   }, [projects]);
 
   // A filtered list that comes up empty is different from an empty app, and
@@ -755,8 +741,8 @@ function RowAction({
 /// picks one is its position here, so reordering moves the digits with it and
 /// there is no second table to fall out of step with the labels.
 const FORKS = [
-  { label: "Fork here", cloud: false },
-  { label: "Fork in new Cloud Session", cloud: true },
+  { label: "Fork here", worktree: false },
+  { label: "Fork in new Worktree Session", worktree: true },
 ] as const;
 
 /// The row's right-click menu. Delete confirms in place — a second surface for
@@ -779,7 +765,7 @@ function RowMenu({
   onDetach,
   children,
 }: {
-  onFork: (cloud: boolean) => void;
+  onFork: (worktree: boolean) => void;
   /// The session is working. The CLI forks by reading its transcript, which a
   /// live child is still appending to, so a fork taken now can inherit half a
   /// turn. The backend refuses it too — this only saves the trip.
@@ -881,7 +867,7 @@ function RowMenu({
                       forkRefs.current[i] = el;
                     }}
                     className="text-ui"
-                    onSelect={() => onFork(fork.cloud)}
+                    onSelect={() => onFork(fork.worktree)}
                   >
                     {fork.label}
                     <Kbd className="ml-auto">{i + 1}</Kbd>
@@ -972,7 +958,7 @@ function SessionRow({
     sessionId: string,
     flags: { archived?: boolean; pinned?: boolean },
   ) => Promise<void>;
-  onFork: (sessionId: string, cloud: boolean) => Promise<void>;
+  onFork: (sessionId: string, worktree: boolean) => Promise<void>;
   onDelete: (sessionId: string) => Promise<void>;
   onDetach: (sessionId: string) => Promise<void>;
 }) {
@@ -994,7 +980,7 @@ function SessionRow({
 
   return (
     <RowMenu
-      onFork={(cloud) => void onFork(item.sessionId, cloud)}
+      onFork={(worktree) => void onFork(item.sessionId, worktree)}
       forkDisabled={status === "in_progress"}
       onDelete={() => void onDelete(item.sessionId)}
       onDetach={nested ? () => void onDetach(item.sessionId) : undefined}
