@@ -138,24 +138,14 @@ const NEW_TASK_MAX_ROWS = 20;
 // and is applied at both call sites alongside this.
 const TEXT_BOX = "py-1 text-composer";
 
-// `String.raw` because the glyphs are drawn with backslashes; an ordinary
-// template literal would eat them as escapes.
-// const WORDMARK = String.raw` ___    ____    ____  __ __
-// |   \  |    \  /    ||  |  |
-// |    \ |  D  )|  o  ||  |  |
-// |  D  ||    / |     ||  ~  |
-// |     ||    \ |  _  ||___, |
-// |     ||  .  \|  |  ||     |
-// |_____||__|\_||__|__||____/`;
-
 // The file is the source, so editing the logo needs no change here — but an
 // <img> paints the file's own fill and this has to take the page's text color.
 // So it is a mask over a `currentColor` background: the SVG supplies the shape,
 // the CSS supplies the ink. Prefixed as well as not, for the older WebKit a
 // Linux build runs on.
 const WORDMARK_MASK = {
-  maskImage: "url(/assets/dray-logo.svg)",
-  WebkitMaskImage: "url(/assets/dray-logo.svg)",
+  maskImage: "url(/assets/lathe-logo.svg)",
+  WebkitMaskImage: "url(/assets/lathe-logo.svg)",
   maskSize: "contain",
   WebkitMaskSize: "contain",
   maskRepeat: "no-repeat",

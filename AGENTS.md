@@ -262,7 +262,13 @@ with `cargo test --manifest-path packages/agent/Cargo.toml`.
 ## Branding and compatibility
 
 The product is Lathe with bundle ID `com.mizius.lathe` (development:
-`com.mizius.lathe.dev`). Keep the existing logo assets. The desktop package and
+`com.mizius.lathe.dev`). The logo is the Lathe spindle mark. Monochrome SVGs
+live in `apps/desktop/public/assets`, including `lathe-logo.svg` for the composer.
+Light, dark, and purple development icon masters live in
+`apps/desktop/src-tauri/icons/src`; regenerate the bundled PNG/ICO/ICNS assets
+with `pnpm --filter lathe icons` after replacing a master. Development builds
+use `icons/dev`. The dark master is retained as an appearance variant; it is
+not currently selected automatically by the native app. The desktop package and
 standalone executable are `lathe` and `lathe-agent`; the default Cloud image is
 `lathe-cloud:latest`. Legacy `dray` harness/model
 IDs, tool namespaces, preferences, data directories, environment variables, and

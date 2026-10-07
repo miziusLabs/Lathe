@@ -8,7 +8,7 @@ Set-Location $root
 $src = Join-Path $root 'src-tauri/icons/src'
 $out = Join-Path $root 'src-tauri/icons'
 
-# The masters are Icon Composer's iOS export: full-bleed to the canvas edge.
+# Masters may include transparent canvas padding; trim it before resizing.
 # macOS sizes dock icons off a 824/1024 grid, so an icns built from full-bleed
 # art draws visibly larger than every neighbour. Inset for the icns only - the
 # flat PNGs are the window/Linux/tray icon, where full-bleed is right.
@@ -49,6 +49,8 @@ function New-Icns {
         $master = Join-Path $temp 'master.png'
         Invoke-External 'magick' @(
             $Source
+            '-trim'
+            '+repage'
             '-resize'
             "${inset}x${inset}"
             '-background'
@@ -100,16 +102,18 @@ function New-FlatIcons {
     )
 
     New-Item -ItemType Directory -Path $Directory -Force | Out-Null
-    Invoke-External 'magick' @($Source, '-resize', '32x32', ($png32 + (Join-Path $Directory '32x32.png')))
-    Invoke-External 'magick' @($Source, '-resize', '128x128', ($png32 + (Join-Path $Directory '128x128.png')))
-    Invoke-External 'magick' @($Source, '-resize', '256x256', ($png32 + (Join-Path $Directory '128x128@2x.png')))
-    Invoke-External 'magick' @($Source, '-resize', '1024x1024', ($png32 + (Join-Path $Directory 'icon.png')))
+    Invoke-External 'magick' @($Source, '-trim', '+repage', '-resize', '32x32', ($png32 + (Join-Path $Directory '32x32.png')))
+    Invoke-External 'magick' @($Source, '-trim', '+repage', '-resize', '128x128', ($png32 + (Join-Path $Directory '128x128.png')))
+    Invoke-External 'magick' @($Source, '-trim', '+repage', '-resize', '256x256', ($png32 + (Join-Path $Directory '128x128@2x.png')))
+    Invoke-External 'magick' @($Source, '-trim', '+repage', '-resize', '1024x1024', ($png32 + (Join-Path $Directory 'icon.png')))
 }
 
 New-FlatIcons (Join-Path $src 'icon-1024.png') $out
 New-Icns (Join-Path $src 'icon-1024.png') (Join-Path $out 'icon.icns')
 Invoke-External 'magick' @(
     (Join-Path $src 'icon-1024.png')
+    '-trim'
+    '+repage'
     '-define'
     'icon:auto-resize=256,128,64,48,32,16'
     (Join-Path $out 'icon.ico')
@@ -118,5 +122,13 @@ Invoke-External 'magick' @(
 $dev = Join-Path $out 'dev'
 New-FlatIcons (Join-Path $src 'icon-dev-1024.png') $dev
 New-Icns (Join-Path $src 'icon-dev-1024.png') (Join-Path $dev 'icon.icns')
+Invoke-External 'magick' @(
+    (Join-Path $src 'icon-dev-1024.png')
+    '-trim'
+    '+repage'
+    '-define'
+    'icon:auto-resize=256,128,64,48,32,16'
+    (Join-Path $dev 'icon.ico')
+)
 
 Write-Host 'icons regenerated'
