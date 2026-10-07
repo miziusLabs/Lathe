@@ -9,7 +9,7 @@
     "app": "pnpm --filter lathe run app",
     "app:no-watch": "pnpm --filter lathe run app:no-watch",
     "tauri": "pnpm --filter lathe run tauri",
-    "build:app": "pnpm --filter lathe run build",
+    "build:app": "cd apps/desktop && PNPM_MANAGE_PACKAGE_MANAGER_VERSIONS=false npm_config_manage_package_manager_versions=false pnpm tauri build --bundles dmg --config '{\"bundle\":{\"createUpdaterArtifacts\":false}}'",
     "test": "pnpm --filter lathe run test"
   }
 }

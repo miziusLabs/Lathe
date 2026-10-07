@@ -307,6 +307,10 @@ pnpm test
 pnpm build:app
 ```
 
+`build:app` creates a local macOS `.dmg` with updater artifact generation
+disabled and pnpm automatic version switching disabled. `npm run build:app`
+invokes the same script from the repository root.
+
 Run commands whose config paths are app-relative from the owning directory:
 
 ```sh
