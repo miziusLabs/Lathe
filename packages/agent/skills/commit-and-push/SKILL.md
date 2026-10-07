@@ -14,8 +14,8 @@ Use the following format for commit messages.
 This should be non technical.
 Each commit should also contain a detailed description.
 
-Unless the user requests otherwise, attach `@drayai` as a co-author to the description.
+Unless the user requests otherwise, attach `@latheai` as a co-author to the description.
 
 ```
-Co-authored-by: Lathe <drayai@users.noreply.github.com>
+Co-authored-by: Lathe <latheai@users.noreply.github.com>
 ```
